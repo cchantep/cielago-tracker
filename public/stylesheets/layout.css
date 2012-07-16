@@ -1,0 +1,13 @@
+body {
+    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+}
+
+.navbar-fixed-top .cielago {
+  color: #000000;
+  float: right;
+  font-weight: bold;
+  margin-left: 20px;
+  padding-left: 0;
+  padding-right: 0;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.1), 0 0 30px rgba(255, 255, 255, 0.125);
+}

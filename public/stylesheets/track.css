@@ -1,0 +1,27 @@
+.form-horizontal .datepicker {
+    width: 89px;
+}
+
+form {
+    margin: 0;
+}
+
+fieldset legend {
+    margin-bottom: 0;
+}
+
+#period label {
+    display: inline;
+}
+
+#track-criterias .control-group {
+    margin-bottom: 0;
+}
+
+#track-criterias .btn-group {
+    margin-top: .5em;
+}
+
+.messageReports .recipientCount {
+    text-align: center;
+}
