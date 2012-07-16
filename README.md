@@ -1,4 +1,4 @@
-cielago-tracker
+Cielago-tracker
 ===============
 
-Tracker module for Cielago
+Tracker module for Cielago.
