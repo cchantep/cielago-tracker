@@ -22,6 +22,19 @@ fieldset legend {
     margin-top: .5em;
 }
 
-.messageReports .recipientCount {
+#messageReports .list {
+    width: 5%;
+}
+
+#messageReports .date {
+    width: 8%;
+}
+
+#messageReports .recipientCount {
+    width: 10%;
     text-align: center;
+}
+
+#pagination {
+    margin-top: .5em;
 }

@@ -1,4 +1,4 @@
-@(lists: List[cielago.models.ListInfo], criterias: Option[cielago.controllers.TrackRequest], recipientCount: Long, messageReports: List[cielago.models.MessageReport])
+@(lists: List[cielago.models.ListInfo], form: Form[cielago.controllers.TrackRequest], dispatchReport: cielago.models.DispatchReport, messageReports: List[cielago.models.MessageReport])
 
 @import java.util.Locale
 @import java.text.SimpleDateFormat
@@ -7,45 +7,67 @@
 
 @layout("Suivi consommation", Some("stylesheets/track.css"), Some("js/track.js")) {
 
-@defining("dd/MM/yyyy") { pat => 
-@defining(new SimpleDateFormat(pat, Locale.FRANCE)) { fmt =>
+@defining(("dd/MM/yyyy", "yyyy-MM-dd")) { pat => 
+@defining((new SimpleDateFormat(pat._1, Locale.FRANCE), new SimpleDateFormat(pat._2, Locale.FRANCE))) { fmt =>
 
 <div class="row-fluid well" id="track-criterias">
-  <form action="@cielago.controllers.routes.Main.index" class="form-horizontal">
+  @helper.form(action = cielago.controllers.routes.Main.handleForm, 'id -> "trackForm", 'class -> "form-horizontal") {
+  @defining(helper.FieldConstructor(field.f)) { implicit c =>
+
     <fieldset>
       <legend>Critères de suivi</legend>
 
       <div class="control-group">
         <label class="control-label" for="mailinglist">Compte (liste)</label>
         <div class="controls">
-          <select id="mailinglist" name="listId" class="combobox"
-                  value="@criterias.map(r=>r.listId.map{id=>id})">
-            <option></option>
-            @for(l <- lists) {
-            <option value="@l.listId"
-                   @criterias.map(r=>r.listId.map{id=>if(id==l.listId)"selected='selected'"})>@l.accountName</option>
-            }
-          </select>
+          @helper.select(field = form("listId"), 
+            options = ("","") :: lists.map{li=>(li.listId,li.accountName)})
         </div>
 
-        <input type="hidden" name="lang" value="fr" />
-        <input type="hidden" name="dateFormat" value="@pat" />
+        @helper.input(form("currentPage")) { (id, name, value, args) =>
+          <input type="hidden" id="currentPage" 
+                 name="currentPage" value="@value" />
+          <input type="hidden" name="lang" value="fr" />
+        }
 
         <label class="control-label" for="startDate">Période</label>
         <div class="controls" id="period">
-          <input type="date" id="startDate" name="startDate" 
-                 data-date-format="@pat.toLowerCase" class="datepicker" 
-                 value="@criterias.map(r=>r.startDate.map{d=>fmt.format(d)})" />
+          @helper.input(form("startDate")) { (id, name, value, args) =>
+            @defining(form.value match {
+              case None => Map('value -> "")
+              case Some(tr) => tr.startDate match {
+                case None => Map('value -> "")
+                case Some(d) => Map('value -> fmt._1.format(d))
+              }
+            }) { attrs =>
+            <input type="date" id="startDate" name="start" class="datepicker" 
+                   data-date-format="@pat._1.toLowerCase" 
+                   @toHtmlArgs(attrs) />
+            }
+
+            <input type="hidden" id="startDateField" 
+                   name="startDate" value="@value" />
+          }
 
           <label for="endDate">au</label>
 
-          <input type="date" id="endDate" name="endDate" 
-                 data-date-format="@pat.toLowerCase" class="datepicker" 
-                 @criterias.map(r=>r.endDate match{
-          case Some(d) => "value='"+fmt.format(d)+"'"
-          case None => "disabled='disabled'"
-          })
+          @helper.input(form("endDate")) { (id, name, value, args) =>
+            @defining(form.value match {
+              case None => Map('disabled -> "disabled", 'value -> "")
+              case Some(tr) => tr.endDate match {
+                case None => Map('disabled -> "disabled", 'value -> "")
+                case Some(d) => Map('value -> fmt._1.format(d))
+              }
+            }) { attrs =>
+            <input type="date" id="endDate" name="end" class="datepicker" 
+                   data-date-format="@pat._1.toLowerCase"
+                   @toHtmlArgs(attrs) />
+            }
 
+            <input type="hidden" id="endDateField" 
+                   name="endDate" value="@value" />
+
+          }
         </div>
 
         <div class="btn-group">
@@ -53,7 +75,8 @@
         </div>
       </div>  
     </fieldset>
-  </form>
+  }<!-- end of FieldConstructor -->
+  }<!-- end of form -->
 </div>
 
 <div class="page-header">
@@ -61,39 +84,59 @@
     Suivi des messages
 
     <span class="label label-info">
-      @if(recipientCount <= 1) {
-        @recipientCount envoi
+      @if(dispatchReport.recipients <= 1) {
+        @dispatchReport.recipients envoi
       } else {
-        @recipientCount envois
+        @dispatchReport.recipients envois
       }
     </span>
 
     <span class="label" style="margin-left: .5em">
-      @if(messageReports.size <= 1) {
-        @messageReports.size message
+      @if(dispatchReport.messages <= 1) {
+        @dispatchReport.messages message
       } else {
-        @messageReports.size messages
+        @dispatchReport.messages messages
       }
     </span>
   </h1>
+
+  <form name="paginationForm" action="#">
+    <div class="btn-group" id="pagination">
+      @defining((((dispatchReport.messages)-1)/10)+1) { pageCount =>
+        @defining(form.value match {
+          case None => 0
+          case Some(tr) => tr.currentPage
+        }) { currentPage =>
+          @for(pi <- 0L until pageCount) {
+            @if(pi == currentPage) {
+              <button class="btn btn-inverse" 
+                      disabled="disabled" value="@pi">@{pi+1}</button>
+            } else {
+              <button class="btn" value="@pi">@{pi+1}</button>
+            }
+          }
+        }
+      }
+    </div>
+  </form>
 </div>
 
-<table class="table messageReports">
+<table class="table" id="messageReports">
   <thead>
     <tr>
-      <th>Liste</th>
-      <th>Sujet</th>
-      <th>Date</th>
+      <th class="list">Liste</th>
+      <th class="date sorting_desc">Date</th>
       <th class="recipientCount">Destinataires</th>
+      <th class="subject">Sujet</th>
     </tr>
   </thead>
   <tbody>
     @for(mr <- messageReports) {
     <tr>
       <td>@mr.list.accountName</td>
-      <td>@mr.subject</td>
-      <td>@fmt.format(mr.sendTime)</td>
+      <td>@fmt._1.format(mr.sendTime)</td>
       <td class="recipientCount">@mr.recipientCount</td>
+      <td>@mr.subject</td>
     </tr>
     }
   </tbody>

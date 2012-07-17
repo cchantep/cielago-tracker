@@ -7,6 +7,10 @@ import java.sql.Connection
 import anorm.{ ~, SQL }
 import anorm.SqlParser.{ long, str }
 
+case class Pagination(
+  perPage: Int /* @todo low unsigned type check */ ,
+  currentIndex: Int /* @todo low unsigned type check */ )
+
 case class MessageReport(
   list: ListInfo,
   messageId: String,
@@ -34,7 +38,13 @@ object MessageReport {
           recipientCount)
     }
 
-  def find(selector: TrackSelector)(implicit conn: Connection) = {
+  def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection) = {
+    println("pagination = %s" format pagination)
+
+    val paginator = "LIMIT %s OFFSET %s".
+      format(pagination.perPage,
+        pagination.perPage * pagination.currentIndex);
+
     val sql = """
 SELECT l.uuid AS list_id, 
   l.login AS account_name, 
@@ -52,8 +62,9 @@ GROUP BY l.uuid,
   l.login, 
   m.uuid, 
   m.subject,
-  m.send_time
-"""
+  m.send_time 
+ORDER BY m.send_time ASC 
+""" + paginator
 
     val rs = selector match {
       case a: TrackPeriodSelector ⇒

@@ -5,96 +5,73 @@ import java.util.Date
 
 import java.text.SimpleDateFormat
 
-import play.api.{ Play, Configuration }
+import play.api.Play
 
-import play.api.mvc.{ Action, Controller, Request }
+import play.api.mvc.{ Action, Controller, Request, Result }
+
+import play.api.data.Form
+import play.api.data.Forms.{ date, mapping, nonEmptyText, number, optional, text }
 
 import cielago.{ Cielago, ListApi, TrackApi }
 
-import cielago.models.{ TrackSelector, TrackPeriodSelector, TrackListSelector, TrackPeriodListSelector }
+import cielago.models.{ DispatchReport, Pagination, TrackSelector, TrackPeriodSelector, TrackListSelector, TrackPeriodListSelector }
 
 object Main extends CielagoController with Cielago {
+  private val trackForm = Form(
+    mapping("startDate" -> optional(date("yyyy-MM-dd")),
+      "endDate" -> optional(date("yyyy-MM-dd")),
+      "listId" -> optional(nonEmptyText),
+      "currentPage" -> number)(TrackRequest.apply)(TrackRequest.unapply))
 
-  def index = Action { request ⇒
-    val listId: Option[String] = get(request, "listId") flatMap { id ⇒
-      id match {
-        case "" ⇒ None
-        case s  ⇒ Some(s)
-      }
-    }
-    var dateFormat = get(request, "dateFormat")
+  def index = Action { request ⇒ initialForm }
 
-    println("listId=%s, dateFormat=%s".
-      format(listId, dateFormat));
+  def handleForm = Action { implicit request ⇒
+    val filledForm = trackForm.bindFromRequest
 
-    val period: Option[(Date, Date)] = dateFormat match {
-      case None ⇒ None
-      case Some(df) ⇒
-        getPeriod(request, df).fold({ err ⇒
-          println("Fails to parse period: %s" format err)
-          None
-        },
-          o ⇒ o)
-    }
+    filledForm.fold({ errf ⇒
+      println("Invalid form data: %s" format errf)
 
-    case class Data(
-      sel: TrackSelector,
-      req: TrackRequest)
+      // @todo low Display error on UI
+      Ok(views.html.track(ListApi.all, errf, DispatchReport(0, 0), List()))
+    }, tr ⇒ process(filledForm, tr))
+  }
 
-    val d: Option[Data] =
-      (listId, period) match {
-        case (None, None) ⇒ None
+  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Request[_]): Result = {
 
-        case (None, Some(p)) ⇒
-          Some(Data(TrackPeriodSelector(p._1, p._2),
-            TrackRequest(Some(p._1), Some(p._2), None)))
+    println("start date = %s, end date = %s, list id = %s, page = %s".
+      format(tr.startDate, tr.endDate, tr.listId, tr.currentPage))
 
-        case (Some(id), None) ⇒
-          Some(Data(TrackListSelector(id),
-            TrackRequest(None, None, Some(id))))
+    // @todo medium Direct 'match' on case class properties?
+    val sel: Option[TrackSelector] =
+      (tr.startDate, tr.endDate, tr.listId) match {
+        case (None, None, Some(i))    ⇒ Some(TrackListSelector(i))
+        case (Some(s), Some(e), None) ⇒ Some(TrackPeriodSelector(s, e))
 
-        case (Some(id), Some(p)) ⇒
-          Some(Data(TrackPeriodListSelector(p._1, p._2, id),
-            TrackRequest(Some(p._1), Some(p._2), Some(id))))
+        case (Some(s), Some(e), Some(i)) ⇒
+          Some(TrackPeriodListSelector(s, e, i))
+
+        case _ ⇒ None
       }
 
-    d match {
-      case None ⇒
-        Ok(views.html.track(ListApi.all, None, 0, List()))
+    // Sets up pagination
+    val pagination = Pagination(10, tr.currentPage)
 
-      case Some(data) ⇒ {
-        println("selector=%s" format data.sel)
+    sel match { // @todo medium Fold option?
+      case None ⇒ initialForm
 
+      case Some(s) ⇒ {
         Ok(views.html.track(ListApi.all,
-          Some(data.req),
-          TrackApi.recipientCount(data.sel),
-          TrackApi.messageReports(data.sel)))
+          form,
+          TrackApi.dispatchReport(s),
+          TrackApi.messageReports(s, pagination)))
       }
     }
   }
 
-  private def getPeriod(request: Request[_], format: String): Valid[Option[(Date, Date)]] = unsafe {
-    val start = get(request, "startDate")
-    val end = get(request, "endDate")
+  private def initialForm: Result =
+    Ok(views.html.track(ListApi.all,
+      trackForm.fill(TrackRequest(None, None, None, 0)),
+      DispatchReport(0, 0),
+      List()))
 
-    println("format=%s, start=%s, end=%s".format(format, start, end))
-
-    (start, end) match {
-      case (Some(s), Some(e)) ⇒ {
-        val lang = get(request, "lang").getOrElse("en")
-        val locale = new Locale(lang)
-        val fmt = new SimpleDateFormat(format, locale)
-        val period = (fmt.parse(s), fmt.parse(e))
-
-        println("period=%s" format period)
-
-        Some(period)
-      }
-
-      case _ ⇒ {
-        println("x")
-        None
-      }
-    }
-  }
 }

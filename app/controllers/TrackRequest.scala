@@ -5,4 +5,5 @@ import java.util.Date
 sealed case class TrackRequest(
   startDate: Option[Date],
   endDate: Option[Date],
-  listId: Option[String])
+  listId: Option[String],
+  currentPage: Int)

@@ -4,17 +4,17 @@ import play.api.Play.current
 
 import play.api.db.DB
 
-import models.{ DispatchReport, MessageReport, TrackSelector }
+import models.{ DispatchReport, MessageReport, Pagination, TrackSelector }
 
 object TrackApi {
 
-  def recipientCount(selector: TrackSelector): Long =
+  def dispatchReport(selector: TrackSelector): DispatchReport =
     DB withConnection { implicit conn ⇒
-      DispatchReport.recipientCount(selector)
+      DispatchReport.report(selector)
     }
 
-  def messageReports(selector: TrackSelector): List[MessageReport] =
+  def messageReports(selector: TrackSelector, pagination: Pagination): List[MessageReport] =
     DB withConnection { implicit conn ⇒
-      MessageReport.find(selector)
+      MessageReport.find(selector, pagination)
     }
 }
