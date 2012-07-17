@@ -1,0 +1,17 @@
+@(lang: String, form: Form[cielago.controllers.TrackRequest], report: cielago.models.DispatchReport)(render: (java.util.Locale, /*jsDatePat:*/String, /*uiDateFmt:*/java.text.SimpleDateFormat, /*startDate:*/Option[java.util.Date], /*endDate:*/Option[java.util.Date], /*pageCount:*/Long) => Html)
+
+@import java.util.Locale
+@import java.text.SimpleDateFormat
+
+@defining((new Locale(lang), "dd/MM/yyyy", (((report.messages)-1)/10)+1)) { a =>
+@defining(new SimpleDateFormat(a._2, a._1)) { b =>
+@defining(form.value match {
+  case None => (None, None)
+  case Some(tr) => (tr.startDate, tr.endDate)
+}) { c =>
+
+  @render(a._1, a._2.toLowerCase, b, c._1, c._2, a._3)
+
+}
+}
+}

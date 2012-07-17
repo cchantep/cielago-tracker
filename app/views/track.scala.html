@@ -5,10 +5,8 @@
 
 @import cielago.controllers.Main
 
-@layout("Suivi consommation", Some("stylesheets/track.css"), Some("js/track.js")) {
-
-@defining(("dd/MM/yyyy", "yyyy-MM-dd")) { pat => 
-@defining((new SimpleDateFormat(pat._1, Locale.FRANCE), new SimpleDateFormat(pat._2, Locale.FRANCE))) { fmt =>
+@layout("Suivi consommation", Some("stylesheets/track.css"), Some("js/track.js")) { lang =>
+@trackInner(lang, form, dispatchReport) { (locale, jsDatePat, uiDateFmt, startDate, endDate, pageCount) =>
 
 <div class="row-fluid well" id="track-criterias">
   @helper.form(action = cielago.controllers.routes.Main.handleForm, 'id -> "trackForm", 'class -> "form-horizontal") {
@@ -27,21 +25,18 @@
         @helper.input(form("currentPage")) { (id, name, value, args) =>
           <input type="hidden" id="currentPage" 
                  name="currentPage" value="@value" />
-          <input type="hidden" name="lang" value="fr" />
+          <input type="hidden" name="lang" value="@lang" />
         }
 
         <label class="control-label" for="startDate">Période</label>
         <div class="controls" id="period">
           @helper.input(form("startDate")) { (id, name, value, args) =>
-            @defining(form.value match {
+            @defining(startDate match {
               case None => Map('value -> "")
-              case Some(tr) => tr.startDate match {
-                case None => Map('value -> "")
-                case Some(d) => Map('value -> fmt._1.format(d))
-              }
+              case Some(d) => Map('value -> uiDateFmt.format(d))
             }) { attrs =>
             <input type="date" id="startDate" name="start" class="datepicker" 
-                   data-date-format="@pat._1.toLowerCase" 
+                   data-date-format="@jsDatePat" 
                    @toHtmlArgs(attrs) />
             }
 
@@ -52,15 +47,12 @@
           <label for="endDate">au</label>
 
           @helper.input(form("endDate")) { (id, name, value, args) =>
-            @defining(form.value match {
+            @defining(endDate match {
               case None => Map('disabled -> "disabled", 'value -> "")
-              case Some(tr) => tr.endDate match {
-                case None => Map('disabled -> "disabled", 'value -> "")
-                case Some(d) => Map('value -> fmt._1.format(d))
-              }
+              case Some(d) => Map('value -> uiDateFmt.format(d))
             }) { attrs =>
             <input type="date" id="endDate" name="end" class="datepicker" 
-                   data-date-format="@pat._1.toLowerCase"
+                   data-date-format="@jsDatePat"
                    @toHtmlArgs(attrs) />
             }
 
@@ -102,18 +94,16 @@
 
   <form name="paginationForm" action="#">
     <div class="btn-group" id="pagination">
-      @defining((((dispatchReport.messages)-1)/10)+1) { pageCount =>
-        @defining(form.value match {
-          case None => 0
-          case Some(tr) => tr.currentPage
-        }) { currentPage =>
-          @for(pi <- 0L until pageCount) {
-            @if(pi == currentPage) {
-              <button class="btn btn-inverse" 
-                      disabled="disabled" value="@pi">@{pi+1}</button>
-            } else {
-              <button class="btn" value="@pi">@{pi+1}</button>
-            }
+      @defining(form.value match {
+        case None => 0
+        case Some(tr) => tr.currentPage
+      }) { currentPage =>
+        @for(pi <- 0L until pageCount) {
+          @if(pi == currentPage) {
+            <button class="btn btn-inverse" 
+                    disabled="disabled" value="@pi">@{pi+1}</button>
+          } else {
+            <button class="btn" value="@pi">@{pi+1}</button>
           }
         }
       }
@@ -134,7 +124,7 @@
     @for(mr <- messageReports) {
     <tr>
       <td>@mr.list.accountName</td>
-      <td>@fmt._1.format(mr.sendTime)</td>
+      <td>@uiDateFmt.format(mr.sendTime)</td>
       <td class="recipientCount">@mr.recipientCount</td>
       <td>@mr.subject</td>
     </tr>
@@ -143,6 +133,4 @@
 </table>
 
 }
-}
-
 }

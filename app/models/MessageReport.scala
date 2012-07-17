@@ -39,8 +39,6 @@ object MessageReport {
     }
 
   def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection) = {
-    println("pagination = %s" format pagination)
-
     val paginator = "LIMIT %s OFFSET %s".
       format(pagination.perPage,
         pagination.perPage * pagination.currentIndex);

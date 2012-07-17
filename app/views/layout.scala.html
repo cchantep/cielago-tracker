@@ -1,4 +1,4 @@
-@(title: String, extraCssAsset: Option[String] = None, extraJsAsset: Option[String], lang: String = "fr")(content: Html)
+@(title: String, extraCssAsset: Option[String] = None, extraJsAsset: Option[String], lang: String = "fr")(content: String => Html)
 
 <!DOCTYPE html>
 <html lang="@lang">
@@ -62,7 +62,7 @@
     </div>
 
     <div class="container">
-      @content
+      @content(lang)
     </div><!-- /container -->
 
     <script src="@routes.Assets.at("js/jquery-1.7.2.min.js")"></script>
