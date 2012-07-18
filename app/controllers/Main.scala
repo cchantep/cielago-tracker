@@ -14,9 +14,11 @@ import play.api.data.Forms.{ date, mapping, nonEmptyText, number, optional, text
 
 import cielago.{ Cielago, ListApi, TrackApi }
 
-import cielago.models.{ DispatchReport, Pagination, TrackSelector, TrackPeriodSelector, TrackListSelector, TrackPeriodListSelector }
+import cielago.models.{ AscendingOrder, DispatchReport, OrderClause, Pagination, TrackSelector, TrackPeriodSelector, TrackListSelector, TrackPeriodListSelector }
 
 object Main extends CielagoController with Cielago {
+  private val defaultOrder = Seq(OrderClause("sendTime", AscendingOrder))
+
   private val trackForm = Form(
     mapping("startDate" -> optional(date("yyyy-MM-dd")),
       "endDate" -> optional(date("yyyy-MM-dd")),
@@ -38,8 +40,14 @@ object Main extends CielagoController with Cielago {
 
   private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Request[_]): Result = {
 
+    /*
     println("start date = %s, end date = %s, list id = %s, page = %s".
       format(tr.startDate, tr.endDate, tr.listId, tr.currentPage))
+      */
+
+    request.cookies get "userDigest" map { digest ⇒
+      println("user digest = %s" format digest)
+    }
 
     // @todo medium Direct 'match' on case class properties?
     val sel: Option[TrackSelector] =
@@ -54,7 +62,7 @@ object Main extends CielagoController with Cielago {
       }
 
     // Sets up pagination
-    val pagination = Pagination(10, tr.currentPage)
+    val pagination = Pagination(10, tr.currentPage, defaultOrder)
 
     sel match { // @todo medium Fold option?
       case None ⇒ initialForm

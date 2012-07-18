@@ -9,7 +9,8 @@ import anorm.SqlParser.{ long, str }
 
 case class Pagination(
   perPage: Int /* @todo low unsigned type check */ ,
-  currentIndex: Int /* @todo low unsigned type check */ )
+  currentIndex: Int /* @todo low unsigned type check */ ,
+  order: Seq[OrderClause] = Seq())
 
 case class MessageReport(
   list: ListInfo,
@@ -19,6 +20,12 @@ case class MessageReport(
   recipientCount: Long)
 
 object MessageReport {
+  val colMap = Map(
+    "listId" -> "l.uuid",
+    "accountName" -> "l.login",
+    "messageId" -> "m.uuid",
+    "subject" -> "m.subject",
+    "sendTime" -> "m.send_time")
 
   val parsing = ListInfo.mapping ~
     str("message_id") ~
@@ -39,6 +46,20 @@ object MessageReport {
     }
 
   def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection) = {
+
+    val order = pagination.order.foldLeft("") { (s, c) ⇒
+      colMap get c.column match {
+        case None ⇒ s
+        case Some(n) ⇒
+          s match {
+            case "" ⇒ "ORDER BY " + n + " " + c.direction.code
+            case v  ⇒ v + ", " + n + " " + c.direction.code
+          }
+      }
+    } // e.g. ORDER BY col [ASC|DESC], ...
+
+    println("order = %s" format order)
+
     val paginator = "LIMIT %s OFFSET %s".
       format(pagination.perPage,
         pagination.perPage * pagination.currentIndex);
