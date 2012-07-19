@@ -10,11 +10,31 @@ import play.api.Play
 import play.api.mvc.{ Action, Controller, Request, Result }
 
 import play.api.data.Form
-import play.api.data.Forms.{ date, mapping, nonEmptyText, number, optional, text }
+import play.api.data.Forms.{
+  date,
+  list,
+  mapping,
+  nonEmptyText,
+  number,
+  optional,
+  text
+}
 
 import cielago.{ Cielago, ListApi, TrackApi }
 
-import cielago.models.{ AscendingOrder, DispatchReport, OrderClause, Pagination, TrackSelector, TrackPeriodSelector, TrackListSelector, TrackPeriodListSelector }
+import cielago.models.{
+  AscendingOrder,
+  DescendingOrder,
+  DispatchReport,
+  MessageReport,
+  OrderClause,
+  Paginated,
+  Pagination,
+  TrackSelector,
+  TrackPeriodSelector,
+  TrackListSelector,
+  TrackPeriodListSelector
+}
 
 object Main extends CielagoController with Cielago {
   private val defaultOrder = Seq(OrderClause("sendTime", AscendingOrder))
@@ -23,6 +43,7 @@ object Main extends CielagoController with Cielago {
     mapping("startDate" -> optional(date("yyyy-MM-dd")),
       "endDate" -> optional(date("yyyy-MM-dd")),
       "listId" -> optional(nonEmptyText),
+      "order" -> list(nonEmptyText),
       "currentPage" -> number)(TrackRequest.apply)(TrackRequest.unapply))
 
   def index = Action { request ⇒ initialForm }
@@ -34,7 +55,7 @@ object Main extends CielagoController with Cielago {
       println("Invalid form data: %s" format errf)
 
       // @todo low Display error on UI
-      Ok(views.html.track(ListApi.all, errf, DispatchReport(0, 0), List()))
+      Ok(views.html.track(ListApi.all, errf, DispatchReport(0, 0), Paginated[MessageReport]()))
     }, tr ⇒ process(filledForm, tr))
   }
 
@@ -62,7 +83,21 @@ object Main extends CielagoController with Cielago {
       }
 
     // Sets up pagination
-    val pagination = Pagination(10, tr.currentPage, defaultOrder)
+    val order = tr.order.foldLeft(Seq[OrderClause]()) {
+      (seq, str) ⇒
+        str.indexOf(":") match {
+          case -1 ⇒ seq
+          case i ⇒ seq :+ (str.splitAt(i) match {
+            case (c, "DESC") ⇒ OrderClause(c, DescendingOrder)
+            case (c, _)      ⇒ OrderClause(c, AscendingOrder)
+          })
+        }
+    } match {
+      case Seq() ⇒ defaultOrder
+      case o     ⇒ o
+    }
+
+    val pagination = Pagination(10, tr.currentPage, order)
 
     sel match { // @todo medium Fold option?
       case None ⇒ initialForm
@@ -78,8 +113,8 @@ object Main extends CielagoController with Cielago {
 
   private def initialForm: Result =
     Ok(views.html.track(ListApi.all,
-      trackForm.fill(TrackRequest(None, None, None, 0)),
+      trackForm.fill(TrackRequest()),
       DispatchReport(0, 0),
-      List()))
+      Paginated[MessageReport]()))
 
 }

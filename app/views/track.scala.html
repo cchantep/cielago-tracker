@@ -1,11 +1,11 @@
-@(lists: List[cielago.models.ListInfo], form: Form[cielago.controllers.TrackRequest], dispatchReport: cielago.models.DispatchReport, messageReports: List[cielago.models.MessageReport])
+@(lists: List[cielago.models.ListInfo], form: Form[cielago.controllers.TrackRequest], dispatchReport: cielago.models.DispatchReport, messageReports: cielago.models.Paginated[cielago.models.MessageReport])
 
 @import java.util.Locale
 @import java.text.SimpleDateFormat
 
 @import cielago.controllers.Main
 
-@layout("Suivi consommation", Some("stylesheets/track.css"), Some("js/track.js")) { lang =>
+@layout("Suivi consommation", Some("stylesheets/track.min.css"), Some("js/track.js")) { lang =>
 @trackInner(lang, form, dispatchReport) { (locale, jsDatePat, uiDateFmt, startDate, endDate, pageCount) =>
 
 <div class="row-fluid well" id="track-criterias">
@@ -111,26 +111,38 @@
   </form>
 </div>
 
-<table class="table" id="messageReports">
+<table class="table" id="messageReports" data-form="trackForm">
   <thead>
     <tr>
-      <th class="list">Liste</th>
-      <th class="date sorting_desc">Date</th>
-      <th class="recipientCount">Destinataires</th>
-      <th class="subject">Sujet</th>
+      <th id="sendTime" class="date sorting">Date</th>
+      <th id="listId" class="list sorting">Liste</th>
+      <th id="recipientCount" class="recipientCount">Destinataires</th>
+      <th id="subject" class="subject">Sujet</th>
     </tr>
   </thead>
   <tbody>
-    @for(mr <- messageReports) {
+    @for(mr <- messageReports.value) {
     <tr>
-      <td>@mr.list.accountName</td>
       <td>@uiDateFmt.format(mr.sendTime)</td>
+      <td>@mr.list.accountName</td>
       <td class="recipientCount">@mr.recipientCount</td>
       <td>@mr.subject</td>
     </tr>
     }
   </tbody>
 </table>
+
+<script type="text/javascript">
+@messageReports.pagination.map { p => 
+@defining(p.order.foldLeft("{}") { (str, c) =>
+  str match {
+    case "{}" => "{'" + c.column + "':'" + c.direction.code + "'}"
+    case s => "{'" + c.column + "':'" + c.direction.code + "'," + s.substring(1)
+  }
+}) { clauses =>
+var _s = {clauses: @clauses, columns:{}}
+}
+}</script>
 
 }
 }

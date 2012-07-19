@@ -7,11 +7,6 @@ import java.sql.Connection
 import anorm.{ ~, SQL }
 import anorm.SqlParser.{ long, str }
 
-case class Pagination(
-  perPage: Int /* @todo low unsigned type check */ ,
-  currentIndex: Int /* @todo low unsigned type check */ ,
-  order: Seq[OrderClause] = Seq())
-
 case class MessageReport(
   list: ListInfo,
   messageId: String,
@@ -45,7 +40,7 @@ object MessageReport {
           recipientCount)
     }
 
-  def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection) = {
+  def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection): Paginated[MessageReport] = {
 
     val order = pagination.order.foldLeft("") { (s, c) ⇒
       colMap get c.column match {
@@ -107,6 +102,6 @@ m.send_time >= {startTime}
           "listId" -> c.listId)
     }
 
-    rs.as(parsing *)
+    Paginated(Some(pagination), rs.as(parsing *))
   }
 }
