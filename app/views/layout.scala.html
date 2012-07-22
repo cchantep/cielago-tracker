@@ -1,4 +1,4 @@
-@(title: String, extraCssAsset: Option[String] = None, extraJsAsset: Option[String], lang: String = "fr")(content: String => Html)
+@(title: String, extraCssAsset: List[String] = List(), extraJsAsset: List[String] = List(), lang: String = "fr")(content: String => Html)
 
 <!DOCTYPE html>
 <html lang="@lang">
@@ -12,14 +12,10 @@
     <!-- Bootstrap -->
     <link href="@routes.Assets.at("bootstrap/css/bootstrap.min.css")" rel="stylesheet" />
 
-    <!-- TODO medium Only when required -->
-    <link href="@routes.Assets.at("bootstrap-datepicker/css/datepicker.min.css")" rel="stylesheet" />
-    <link href="@routes.Assets.at("bootstrap-datatable/css/datatable.min.css")" rel="stylesheet" />
-
     <!-- link href="http://twitter.github.com/bootstrap/assets/css/bootstrap-responsive.css" rel="stylesheet" / -->
 
     <link href="@routes.Assets.at("stylesheets/layout.css")" rel="stylesheet" />
-    @extraCssAsset.map { asset =>
+    @for(asset <- extraCssAsset) {
     <link href="@routes.Assets.at(asset)" rel="stylesheet" />
     }
 
@@ -73,7 +69,7 @@
     <script src="@routes.Assets.at("bootstrap-datepicker/js/locales/bootstrap-datepicker." + lang + ".js")"></script>
     <script>$(".datepicker").datepicker({language:"@lang", autoclose:true})</script>
 
-    @extraJsAsset.map { asset =>
+    @for(asset <- extraJsAsset) {
     <script src="@routes.Assets.at(asset)"></script>
     }
   </body>

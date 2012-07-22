@@ -20,7 +20,8 @@ object MessageReport {
     "accountName" -> "l.login",
     "messageId" -> "m.uuid",
     "subject" -> "m.subject",
-    "sendTime" -> "m.send_time")
+    "sendTime" -> "m.send_time",
+    "recipientCount" -> "recipient_count")
 
   val parsing = ListInfo.mapping ~
     str("message_id") ~
@@ -42,18 +43,7 @@ object MessageReport {
 
   def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection): Paginated[MessageReport] = {
 
-    val order = pagination.order.foldLeft("") { (s, c) ⇒
-      colMap get c.column match {
-        case None ⇒ s
-        case Some(n) ⇒
-          s match {
-            case "" ⇒ "ORDER BY " + n + " " + c.direction.code
-            case v  ⇒ v + ", " + n + " " + c.direction.code
-          }
-      }
-    } // e.g. ORDER BY col [ASC|DESC], ...
-
-    println("order = %s" format order)
+    val order = Pagination.sqlOrder(pagination.order, colMap)
 
     val paginator = "LIMIT %s OFFSET %s".
       format(pagination.perPage,
@@ -77,8 +67,7 @@ GROUP BY l.uuid,
   m.uuid, 
   m.subject,
   m.send_time 
-ORDER BY m.send_time ASC 
-""" + paginator
+""" + order + " " + paginator
 
     val rs = selector match {
       case a: TrackPeriodSelector ⇒

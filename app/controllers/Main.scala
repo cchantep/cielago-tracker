@@ -88,8 +88,8 @@ object Main extends CielagoController with Cielago {
         str.indexOf(":") match {
           case -1 ⇒ seq
           case i ⇒ seq :+ (str.splitAt(i) match {
-            case (c, "DESC") ⇒ OrderClause(c, DescendingOrder)
-            case (c, _)      ⇒ OrderClause(c, AscendingOrder)
+            case (c, ":DESC") ⇒ OrderClause(c, DescendingOrder)
+            case (c, _)       ⇒ OrderClause(c, AscendingOrder)
           })
         }
     } match {

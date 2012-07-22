@@ -5,7 +5,7 @@
 
 @import cielago.controllers.Main
 
-@layout("Suivi consommation", Some("stylesheets/track.min.css"), Some("js/track.js")) { lang =>
+@layout("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.min.css"), List("js/sort.min.js", "js/track.min.js")) { lang =>
 @trackInner(lang, form, dispatchReport) { (locale, jsDatePat, uiDateFmt, startDate, endDate, pageCount) =>
 
 <div class="row-fluid well" id="track-criterias">
@@ -92,23 +92,23 @@
     </span>
   </h1>
 
+  @defining(form.value match {
+    case None => 0
+    case Some(tr) => tr.currentPage
+  }) { currentPage =>
   <form name="paginationForm" action="#">
     <div class="btn-group" id="pagination">
-      @defining(form.value match {
-        case None => 0
-        case Some(tr) => tr.currentPage
-      }) { currentPage =>
-        @for(pi <- 0L until pageCount) {
-          @if(pi == currentPage) {
-            <button class="btn btn-inverse" 
-                    disabled="disabled" value="@pi">@{pi+1}</button>
-          } else {
-            <button class="btn" value="@pi">@{pi+1}</button>
-          }
+      @for(pi <- 0L until pageCount) {
+        @if(pi == currentPage) {
+          <button class="btn btn-inverse" 
+                  disabled="disabled" value="@pi">@{pi+1}</button>
+        } else {
+          <button class="btn" value="@pi">@{pi+1}</button>
         }
       }
     </div>
   </form>
+  }
 </div>
 
 <table class="table" id="messageReports" data-form="trackForm">
@@ -116,8 +116,8 @@
     <tr>
       <th id="sendTime" class="date sorting">Date</th>
       <th id="listId" class="list sorting">Liste</th>
-      <th id="recipientCount" class="recipientCount">Destinataires</th>
-      <th id="subject" class="subject">Sujet</th>
+      <th id="subject" class="subject sorting">Sujet</th>
+      <th id="recipientCount" class="recipientCount sorting">Destinataires</th>
     </tr>
   </thead>
   <tbody>
@@ -125,8 +125,8 @@
     <tr>
       <td>@uiDateFmt.format(mr.sendTime)</td>
       <td>@mr.list.accountName</td>
-      <td class="recipientCount">@mr.recipientCount</td>
       <td>@mr.subject</td>
+      <td class="recipientCount">@mr.recipientCount</td>
     </tr>
     }
   </tbody>
