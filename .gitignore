@@ -2,6 +2,8 @@ conf/application.conf
 logs
 project/project
 project/target
+project/testdb
 target
 tmp
 dist
+derby.log
