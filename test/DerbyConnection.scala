@@ -1,20 +1,22 @@
-package cielago.test
+package cielago
 
 import java.sql.{ Connection, DriverManager }
 
-sealed trait DerbyConnection {
-  private val derbyDriver =
-    Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
+import scalaz.{ Failure, Success }
 
-  def inDerby[A](op: Connection ⇒ A) =
-    withConnection(DriverManager.getConnection("jdbc:derby:project/testdb"), op)
+trait DerbyConnection extends Cielago {
+  def inDerby[A](op: Connection ⇒ A): Valid[A] =
+    withConnection(DerbyUtils.getConnection("jdbc:derby:project/testdb"), op)
 
-  private def withConnection[A](con: Connection, op: Connection ⇒ A) =
+  private def withConnection[A](c: Connection, op: Connection ⇒ A): Valid[A] =
     try {
-      op(con)
+      Success(op(c))
     } catch {
-      case t: Throwable ⇒ t.printStackTrace()
+      case t: Throwable ⇒ {
+        t.printStackTrace()
+        Failure(makeFailures(t))
+      }
     } finally {
-      con.close()
+      c.close()
     }
 }

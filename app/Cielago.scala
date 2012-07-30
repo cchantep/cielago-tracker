@@ -2,7 +2,7 @@ package cielago
 
 import util.control.Exception.allCatch
 
-import scalaz.{ Failure, Identitys, Validation, Validations, NonEmptyList }
+import scalaz.{ Identitys, Validation, Validations, NonEmptyList }
 
 /**
  * Adapted from https://github.com/ornicar/scalalib/blob/master/src/main/scala/OrnicarValidation.scala
@@ -12,10 +12,10 @@ trait Cielago extends Validations with Identitys {
 
   type Valid[A] = Validation[Failures, A]
 
-  private def makeFailures(e: Any): Failures = e match {
-    case e: Throwable ⇒ e.getMessage wrapNel
+  protected def makeFailures(e: Any): Failures = e match {
+    case e: Throwable       ⇒ e.getMessage wrapNel
     case m: NonEmptyList[_] ⇒ m map (_.toString)
-    case s ⇒ s.toString wrapNel
+    case s                  ⇒ s.toString wrapNel
   }
 
   private def eitherToValidation[E, B](either: Either[E, B]): Valid[B] =

@@ -10,6 +10,7 @@ trait Dependencies {
   val scalaz = "org.scalaz" %% "scalaz-core" % "6.0.4"
 
   val postgresql = "postgresql" % "postgresql" % "9.1-901.jdbc4"
+
   val derby = "org.apache.derby" % "derby" % "10.9.1.0"
 }
 
@@ -20,7 +21,11 @@ object ApplicationBuild extends Build with Resolvers with Dependencies {
     "1.0-SNAPSHOT",
     mainLang = SCALA).settings(
       resolvers ++= Seq(iliaz),
-      libraryDependencies ++= Seq(scalaz, postgresql),
-      libraryDependencies in Test := Seq(derby),
-      scalacOptions := Seq("-deprecation", "-unchecked"))
+      libraryDependencies ++= Seq(scalaz, postgresql, derby),
+      scalacOptions := Seq("-deprecation", "-unchecked"),
+      testOptions in Test += Tests.Cleanup(loader ⇒ {
+        loader.loadClass("cielago.DerbyUtils").
+          getMethod("shutdown").invoke(null)
+      }))
+
 }
