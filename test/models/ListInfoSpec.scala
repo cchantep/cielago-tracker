@@ -4,7 +4,7 @@ import scalaz.{ Failure, Success }
 
 import org.specs2.mutable._
 
-import cielago.{ DerbyConnection, DerbyUtils }
+import cielago.DerbyConnection
 
 object ListInfoSpec extends Specification with DerbyConnection {
 

@@ -3,8 +3,7 @@ import Keys._
 import PlayProject._
 
 trait Resolvers {
-  val iliaz = "iliaz.com" at "http://scala.iliaz.com/"
-  val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases" 
+  val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
 }
 
 trait Dependencies {
@@ -22,7 +21,6 @@ object ApplicationBuild extends Build with Resolvers with Dependencies {
     "1.0-SNAPSHOT",
     mainLang = SCALA).settings(
       resolvers ++= Seq(sonatype),
-      libraryDependencies ++= Seq(scalaz, postgresql, derby),
+      libraryDependencies ++= Seq(scalaz, postgresql, derby % "test"),
       scalacOptions := Seq("-deprecation", "-unchecked"))
-
 }
