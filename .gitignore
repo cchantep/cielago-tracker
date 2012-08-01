@@ -7,3 +7,4 @@ target
 tmp
 dist
 derby.log
+project/testdb/log
