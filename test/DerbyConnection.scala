@@ -18,5 +18,10 @@ trait DerbyConnection extends Cielago {
       }
     } finally {
       c.close()
+      try {
+        DriverManager.getConnection("jdbc:derby:;shutdown=true")
+      } catch {
+        case t: Throwable ⇒ println("DERBY: " + t.getMessage())
+      }
     }
 }

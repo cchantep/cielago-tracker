@@ -4,6 +4,7 @@ import PlayProject._
 
 trait Resolvers {
   val iliaz = "iliaz.com" at "http://scala.iliaz.com/"
+  val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases" 
 }
 
 trait Dependencies {
@@ -20,12 +21,8 @@ object ApplicationBuild extends Build with Resolvers with Dependencies {
     "Cielago-tracker",
     "1.0-SNAPSHOT",
     mainLang = SCALA).settings(
-      resolvers ++= Seq(iliaz),
+      resolvers ++= Seq(sonatype),
       libraryDependencies ++= Seq(scalaz, postgresql, derby),
-      scalacOptions := Seq("-deprecation", "-unchecked"),
-      testOptions in Test += Tests.Cleanup(loader ⇒ {
-        loader.loadClass("cielago.DerbyUtils").
-          getMethod("shutdown").invoke(null)
-      }))
+      scalacOptions := Seq("-deprecation", "-unchecked"))
 
 }
