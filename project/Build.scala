@@ -12,6 +12,8 @@ trait Dependencies {
   val postgresql = "postgresql" % "postgresql" % "9.1-901.jdbc4"
 
   val derby = "org.apache.derby" % "derby" % "10.9.1.0"
+
+  val codec = "commons-codec" % "commons-codec" % "1.6"
 }
 
 object ApplicationBuild extends Build with Resolvers with Dependencies {
@@ -21,6 +23,10 @@ object ApplicationBuild extends Build with Resolvers with Dependencies {
     "1.0-SNAPSHOT",
     mainLang = SCALA).settings(
       resolvers ++= Seq(sonatype),
-      libraryDependencies ++= Seq(scalaz, postgresql, derby % "test"),
+      libraryDependencies ++= 
+        Seq(scalaz, 
+            postgresql, 
+            derby % "test",
+            codec % "test"),
       scalacOptions := Seq("-deprecation", "-unchecked"))
 }

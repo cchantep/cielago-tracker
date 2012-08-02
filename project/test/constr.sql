@@ -85,3 +85,20 @@ FOR EACH ROW
   UPDATE recipient_tbl SET send_state=2
   WHERE uuid = n.recipient_id
     AND message_uuid = n.message_id;
+
+
+-- manager_tbl
+ALTER TABLE manager_tbl 
+ADD CONSTRAINT manager_pk 
+PRIMARY KEY(list_uuid, username);
+
+ALTER TABLE manager_tbl 
+ADD CONSTRAINT manager_list_fk 
+FOREIGN KEY(list_uuid) 
+REFERENCES list_tbl(uuid);
+
+CREATE INDEX manager_list_idx ON manager_tbl(list_uuid);
+
+CREATE INDEX manager_username_idx ON manager_tbl(username);
+
+CREATE INDEX manager_secret_idx ON manager_tbl(md5_secret);

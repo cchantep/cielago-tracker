@@ -70,3 +70,27 @@ CREATE TABLE member_tbl (
     email VARCHAR(125) NOT NULL,
     uuid VARCHAR(36) NOT NULL
 );
+
+
+-----
+-- Table: manager_tbl
+-----
+CREATE TABLE manager_tbl (
+    list_uuid VARCHAR(36) NOT NULL,
+    username VARCHAR(25) NOT NULL,
+    md5_secret VARCHAR(125) NOT NULL
+);
+
+
+-----
+-- View: trackers
+-----
+CREATE FUNCTION MD5(CLEARTEXT VARCHAR(125))
+RETURNS VARCHAR(50) 
+PARAMETER STYLE JAVA 
+NO SQL LANGUAGE JAVA 
+EXTERNAL NAME 'org.apache.commons.codec.digest.DigestUtils.md5Hex';
+
+CREATE VIEW trackers (list_uuid, username, md5_secret) AS 
+SELECT list_uuid, username, md5_secret FROM manager_tbl 
+UNION SELECT uuid, login, MD5(password) FROM list_tbl;
