@@ -4,7 +4,10 @@ logLevel := Level.Warn
 // The Typesafe repository
 resolvers += "Typesafe repository" at "http://repo.typesafe.com/typesafe/releases/"
 
-//libraryDependencies += "org.apache.derby" % "derby" % "10.9.1.0"
+// Derby deps
+libraryDependencies += "org.apache.derby" % "derby" % "10.9.1.0"
+
+libraryDependencies += "org.apache.derby" % "derbytools" % "10.9.1.0"
 
 // Use the Play sbt plugin for Play projects
 //addSbtPlugin("play" % "sbt-plugin" % "2.1-SNAPSHOT")
