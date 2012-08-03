@@ -114,6 +114,8 @@ sealed trait DerbyTesting {
       }
 
     def withLogStream(block: FileOutputStream ⇒ Int): Int = {
+      new File("logs").mkdir()
+
       val log = new FileOutputStream("logs/testdb.log")
 
       try {
