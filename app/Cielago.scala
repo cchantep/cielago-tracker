@@ -1,5 +1,7 @@
 package cielago
 
+import java.io.{ PrintWriter, StringWriter }
+
 import util.control.Exception.allCatch
 
 import scalaz.{ Identitys, Validation, Validations, NonEmptyList }
@@ -12,16 +14,25 @@ trait Cielago extends Validations with Identitys {
 
   type Valid[A] = Validation[Failures, A]
 
-  protected def makeFailures(e: Any): Failures = e match {
-    case e: Throwable       ⇒ e.getMessage wrapNel
-    case m: NonEmptyList[_] ⇒ m map (_.toString)
-    case s                  ⇒ s.toString wrapNel
+  protected def stackTraceFailure(t: Throwable): Failures = {
+    val buff = new StringWriter()
+    val w = new PrintWriter(buff)
+
+    try {
+      t.printStackTrace(w)
+      w.flush()
+
+      buff.toString wrapNel
+    } catch {
+      case _ ⇒ t.getMessage wrapNel
+    } finally {
+      try {
+        w.close()
+      }
+    }
   }
 
-  private def eitherToValidation[E, B](either: Either[E, B]): Valid[B] =
-    validation(either.left map makeFailures)
-
-  def unsafe[A](op: ⇒ A)(implicit handler: Throwable ⇒ String = _.getMessage): Valid[A] =
-    eitherToValidation((allCatch either op).left map handler)
+  def unsafe[A](op: ⇒ A)(implicit handler: Throwable ⇒ Failures = stackTraceFailure _): Valid[A] =
+    validation((allCatch either op).left map handler)
 
 }

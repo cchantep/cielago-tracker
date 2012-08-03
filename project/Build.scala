@@ -1,6 +1,6 @@
 import java.io.{ File, FileInputStream, FileOutputStream }
 
-import java.sql.{ DriverManager, Connection }
+import java.sql.{ DriverManager, Connection, SQLException }
 
 import org.apache.commons.io.FileUtils
 
@@ -33,84 +33,138 @@ sealed trait Dependencies {
 
 }
 
-sealed trait Testing {
-  private val testDbName = "project/testdb"
+sealed trait DerbyTesting {
+  private val testDbName = "target/testdb"
 
   private val testDbDir = new File(testDbName)
 
   private val testDbScripts =
     Seq("schema.sql", "fixtures.sql", "constr.sql")
 
-  private def testConnection()(implicit logger: Logger): Option[Connection] =
-    try {
+  private def withConnection(block: Connection ⇒ Unit)(implicit logger: Logger): Unit = {
+    val driverLoaded = try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver").
         newInstance()
 
-      val conn = DriverManager.
-        getConnection("jdbc:derby:" + testDbName + ";create=true")
-
-      conn.setAutoCommit(false)
-
-      Some(conn)
+      true
     } catch {
       case t: Throwable ⇒ {
         logger.trace(t)
-        None
+        false
       }
     }
 
+    driverLoaded match {
+      case false ⇒ logger.error("Fails to loader Derby driver")
+      case true ⇒ {
+        val conn = DriverManager.
+          getConnection("jdbc:derby:" + testDbName + ";create=true")
+
+        try {
+          conn.setAutoCommit(false)
+
+          block(conn)
+        } catch {
+          case t: Throwable ⇒ logger.trace(t)
+        } finally {
+          try {
+            conn.close()
+          } catch {
+            case t: Throwable ⇒ logger.warn("Fails to close connection: %s" format t.getMessage)
+          }
+
+          try {
+            DriverManager.getConnection("jdbc:derby:;shutdown=true")
+          } catch {
+            case sql: SQLException ⇒ sql.getErrorCode match {
+              case 50000 ⇒ logger.info("testdb successfully shutdown")
+              case _     ⇒ logger.trace(sql)
+            }
+            case t: Throwable ⇒ logger.trace(t)
+          }
+        }
+      }
+    }
+  }
+
   protected def testSetup()(implicit logger: Logger): Unit = {
+    logger.info("Will set testdb up")
+
     def errorOnScript(script: String, errors: Int): Int = {
       logger.warn("Fails to run SQL script %s; errors = %s".
         format(script, errors))
 
-      -1
+      errors
     }
 
-    testConnection match {
-      case None ⇒ logger.error("No test connection available")
+    def importScript(conn: Connection,
+      script: FileInputStream,
+      log: FileOutputStream): Int /*error count*/ =
+      try { // @todo medium Loan pattern for stream
+        DerbyTools.runScript(conn, script, "UTF-8", log, "UTF-8")
+      } catch {
+        case t: Throwable ⇒ {
+          logger.trace(t)
+          1
+        }
+      } finally {
+        try {
+          script.close()
+        }
+      }
 
-      case Some(conn) ⇒ {
-        testDbScripts.foldLeft(0) { (n, script) ⇒
-          try { // @todo medium Loan pattern for stream
-            val scriptFile = new FileInputStream("project/test/" + script)
-            val res =
-              DerbyTools.runScript(conn,
-                scriptFile,
-                "UTF-8",
-                new FileOutputStream("logs/testdb.log"),
-                "UTF-8")
+    def withLogStream(block: FileOutputStream ⇒ Int): Int = {
+      val log = new FileOutputStream("logs/testdb.log")
+
+      try {
+        block(log)
+      } catch {
+        case t: Throwable ⇒ {
+          logger.trace(t)
+          1
+        }
+      } finally {
+        try {
+          log.close()
+        }
+      }
+    }
+
+    withConnection { conn ⇒
+      testDbScripts.foldLeft(0) { (n, script) ⇒
+        withLogStream { log ⇒
+          {
+            logger.info("Will import SQL script: %s" format script)
+
+            var res =
+              importScript(conn,
+                new FileInputStream("project/test/" + script),
+                log)
 
             (n, res) match {
               case (a, -1)     ⇒ a
               case (b, 0)      ⇒ b
               case (c, errors) ⇒ c + errorOnScript(script, errors)
             }
-          } catch {
-            case t: Throwable ⇒ {
-              logger.trace(t)
-              -1
-            }
-          }
-        } match {
-          case 0 /*No error running SQL scripts*/ ⇒ conn.commit()
-          case ec ⇒ {
-            logger.error("Fails to run SQL scripts; total errors = %s".
-              format(ec))
-
           }
         }
+      } match {
+        case 0 /*No error running SQL scripts*/ ⇒ conn.commit()
+        case ec ⇒ {
+          logger.error("Fails to run SQL scripts; total errors = %s".
+            format(ec))
+
+        }
       }
-    } // end of testConnection match
+    } // end of withConnection
   }
 
-  protected def testCleanup(): Unit = {
-    FileUtils.deleteDirectory(testDbDir)
-  }
+  protected def testCleanup(): Unit = FileUtils.deleteDirectory(testDbDir)
+
 }
 
 object ApplicationBuild extends Build
-    with Resolvers with Dependencies with Testing {
+    with Resolvers with Dependencies with DerbyTesting {
 
   implicit val logger = ConsoleLogger()
 

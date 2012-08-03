@@ -6,7 +6,7 @@ import scalaz.{ Failure, Success }
 
 trait DerbyConnection extends Cielago {
   def inDerby[A](op: Connection ⇒ A): Valid[A] =
-    getConnection("jdbc:derby:project/testdb").fold(err ⇒ Failure(err),
+    getConnection("jdbc:derby:target/testdb").fold(err ⇒ Failure(err),
       connection ⇒ withConnection(connection, op))
 
   private def withConnection[A](c: Connection, op: Connection ⇒ A): Valid[A] =
@@ -14,8 +14,7 @@ trait DerbyConnection extends Cielago {
       Success(op(c))
     } catch {
       case t: Throwable ⇒ {
-        t.printStackTrace()
-        Failure(makeFailures(t))
+        Failure(stackTraceFailure(t))
       }
     } finally {
       c.close()
@@ -28,8 +27,7 @@ trait DerbyConnection extends Cielago {
     }
 
   private def getConnection(url: String): Valid[Connection] = unsafe {
-    Class.forName("org.apache.derby.jdbc.EmbeddedDriver").
-      newInstance()
+    Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance()
 
     DriverManager.getConnection(url)
   }
