@@ -7,6 +7,7 @@ import org.specs2.mutable._
 import cielago.DerbyConnection
 
 object ListInfoSpec extends Specification with DerbyConnection {
+  "= Specification for model of list information =" title
 
   "List information" should {
     val expected = List(ListInfo("list1", "test1"),

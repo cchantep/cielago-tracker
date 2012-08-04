@@ -1,13 +1,12 @@
 package cielago.controllers
 
-import java.util.Locale
-import java.util.Date
+import java.util.{ Date, Locale }
 
 import java.text.SimpleDateFormat
 
 import play.api.Play
 
-import play.api.mvc.{ Action, Controller, Request, Result }
+import play.api.mvc.{ Controller, Request, Result }
 
 import play.api.data.Form
 import play.api.data.Forms.{
@@ -39,16 +38,16 @@ import cielago.models.{
 object Main extends CielagoController with Cielago {
   private val defaultOrder = Seq(OrderClause("sendTime", AscendingOrder))
 
-  private val trackForm = Form(
+  private lazy val trackForm = Form(
     mapping("startDate" -> optional(date("yyyy-MM-dd")),
       "endDate" -> optional(date("yyyy-MM-dd")),
       "listId" -> optional(nonEmptyText),
       "order" -> list(nonEmptyText),
       "currentPage" -> number)(TrackRequest.apply)(TrackRequest.unapply))
 
-  def index = Action { request ⇒ initialForm }
+  def index = SecureAction { request ⇒ initialForm }
 
-  def handleForm = Action { implicit request ⇒
+  def handleForm = SecureAction { implicit request ⇒
     val filledForm = trackForm.bindFromRequest
 
     filledForm.fold({ errf ⇒
@@ -65,10 +64,6 @@ object Main extends CielagoController with Cielago {
     println("start date = %s, end date = %s, list id = %s, page = %s".
       format(tr.startDate, tr.endDate, tr.listId, tr.currentPage))
       */
-
-    request.cookies get "userDigest" map { digest ⇒
-      println("user digest = %s" format digest)
-    }
 
     // @todo medium Direct 'match' on case class properties?
     val sel: Option[TrackSelector] =
