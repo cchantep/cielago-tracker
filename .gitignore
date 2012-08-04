@@ -2,7 +2,6 @@ conf/application.conf
 logs
 project/project
 project/target
-project/testdb/log/log*.*
 target
 tmp
 dist
