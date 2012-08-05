@@ -37,9 +37,10 @@ object ApplicationBuild extends Build
 
   lazy val main = PlayProject(
     "Cielago-tracker",
-    "1.0-SNAPSHOT",
+    "1.0.0",
     mainLang = SCALA).settings(
-      resolvers ++= Seq(sonatype),
+      resolvers ++= Seq(sonatype)
+        ++ atewazaResolvers,
       libraryDependencies ++= compile
         ++ test.map { dep ⇒ dep % "test" }
         ++ atewazaTestDependencies

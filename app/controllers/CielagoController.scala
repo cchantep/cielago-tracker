@@ -10,7 +10,10 @@ trait CielagoController extends Controller {
   def SecureAction(block: (Request[AnyContent]) ⇒ Result): Action[AnyContent] =
     Action { request ⇒
       request.session.get("userDigest") orElse {
-        request.cookies.get("userDigest") map { cookie ⇒ cookie.value }
+        request.cookies.get("userDigest") map { cookie ⇒
+          println("cookie=%s" format cookie.value)
+          cookie.value
+        }
       } match {
         case None         ⇒ Unauthorized
         case Some(digest) ⇒ block(request)
