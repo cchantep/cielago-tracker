@@ -9,7 +9,7 @@ import models.ListInfo
 object ListApi {
 
   def all: List[ListInfo] = DB withConnection { implicit conn ⇒
-      ListInfo.all
-    }
+    ListInfo.all
+  }
 
 }

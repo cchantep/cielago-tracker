@@ -4,9 +4,8 @@ import scalaz.{ Failure, Success }
 
 import org.specs2.mutable._
 
-import cielago.DerbyConnection
-
 object DispatchReportSpec extends Specification with DerbyConnection {
+  "= Dispatch report specification =" title
 
   "Dispatch report for list #1" should {
     val sel = TrackListSelector("list1")

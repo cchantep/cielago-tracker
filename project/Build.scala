@@ -39,11 +39,10 @@ object ApplicationBuild extends Build
     "Cielago-tracker",
     "1.0.0",
     mainLang = SCALA).settings(
-      resolvers ++= Seq(sonatype)
-        ++ atewazaResolvers,
+      resolvers ++= Seq(sonatype),
       libraryDependencies ++= compile
         ++ test.map { dep ⇒ dep % "test" }
-        ++ atewazaTestDependencies
+        ++ Seq("cchantep" %% "atewaza" % "1.0.0" % "test")
         ++ runtime.map { dep ⇒ dep % "runtime" },
       testOptions := Seq(Tests.Setup(atewazaSetup _),
         Tests.Cleanup(atewazaCleanup _)),
