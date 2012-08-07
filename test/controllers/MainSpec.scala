@@ -11,12 +11,12 @@ import play.api.test.{ FakeRequest, FakeApplication, Helpers }
 object MainSpec extends Specification {
   "= Main controller specification =".title
 
-  /*
   private def fakeApp: FakeApplication =
     FakeApplication(additionalConfiguration = Map(
       "db.default.driver" -> "org.apache.derby.jdbc.ClientDriver",
       "db.default.url" -> "jdbc:derby://localhost:1527/target/testdb",
-      "evolutionplugin" -> "disabled"))
+      "evolutionplugin" -> "disabled"),
+      classloader = Class.forName("org.apache.derby.jdbc.ClientDriver").getClassLoader)
 
   "Call to index action without cookie/session user digest" should {
     Helpers.running(fakeApp) {
@@ -71,5 +71,4 @@ object MainSpec extends Specification {
   }
 
   // md5Hex(userName + md5Hex(':' + password))
-*/
 }

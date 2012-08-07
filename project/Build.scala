@@ -29,6 +29,7 @@ sealed trait Dependencies {
 object ApplicationBuild extends Build
     with Resolvers with Dependencies with DerbyTesting {
 
+  override val atewazaLogger = Some(ConsoleLogger())
   override val atewazaDbPath = "target/testdb"
   override val atewazaDbScripts =
     Seq("schema", "constr", "fixtures") map { n ⇒
