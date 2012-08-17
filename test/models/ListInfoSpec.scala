@@ -1,20 +1,21 @@
 package cielago.models
 
-import scalaz.{ Failure, Success }
+import scalaz.{ Failure, Success, NonEmptyList }
 
 import org.specs2.mutable._
 
 object ListInfoSpec extends Specification with DerbyConnection {
   "= Specification for model of list information =" title
 
+  val all = List(ListInfo("list1", "test1"),
+    ListInfo("list2", "test2"))
+
   "List of all information" should {
-    val expected = List(ListInfo("list1", "test1"),
-      ListInfo("list2", "test2"))
 
     lazy val testRes = inDerby { implicit con ⇒ ListInfo.all }
 
     "be expected one" in {
-      testRes.fold(e ⇒ List(), list ⇒ list) must_== expected
+      testRes.fold(e ⇒ List(), list ⇒ list) must haveTheSameElementsAs(all)
     }
   }
 
@@ -25,14 +26,29 @@ object ListInfoSpec extends Specification with DerbyConnection {
       println("failures = %s" format f)
       failure
     }, info ⇒
-      "found for invalid user digest" in { info must_== List[ListInfo]() })
+      "be found for invalid user digest" in { info must beNone })
   }
 
   "Tracked lists" should {
     inDerby { implicit con ⇒
+      // test1:pass1
       ListInfo.tracked("31760a4f6e4e5edde51747a52f1a9628")
     }.fold(e ⇒ failure, info ⇒
-      "only be list1" in { info must_== List(ListInfo("list1", "test1")) })
+      "only be list1 for user test1" in {
+        info must beSome.like {
+          case nel ⇒ nel.list must contain(ListInfo("list1", "test1")).only
+        }
+      })
+
+    inDerby { implicit con ⇒
+      // manager:pass_manager
+      ListInfo.tracked("ffa220080eaa78453a71929d607b2402")
+    }.fold(e ⇒ failure, info ⇒
+      "be all lists for manager" in {
+        info must beSome.like {
+          case nel ⇒ nel.list must haveTheSameElementsAs(all)
+        }
+      })
   }
 
   // @todo high tracked for Manager

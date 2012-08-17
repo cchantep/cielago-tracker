@@ -1,6 +1,22 @@
 package cielago.controllers
 
-import play.api.mvc.{ Action, AnyContent, Controller, Request, Result }
+import scalaz.NonEmptyList
+import scalaz.Scalaz._
+
+import play.api.db.DB
+
+import play.api.Play.current
+
+import play.api.mvc.{
+  Action,
+  AnyContent,
+  Controller,
+  PlainResult,
+  Request,
+  Result
+}
+
+import cielago.models.ListInfo
 
 trait CielagoController extends Controller {
 
@@ -9,14 +25,24 @@ trait CielagoController extends Controller {
 
   def SecureAction(block: (Request[AnyContent]) ⇒ Result): Action[AnyContent] =
     Action { request ⇒
-      request.session.get("userDigest") orElse {
-        request.cookies.get("userDigest") map { cookie ⇒
-          println("cookie=%s" format cookie.value)
-          cookie.value
+      val userDigest: Option[String] = request.
+        session.get("userDigest") orElse {
+          request.cookies.get("userDigest") flatMap { cookieDigest ⇒
+            DB withConnection { implicit conn ⇒
+              ListInfo.tracked(cookieDigest.value) map { nel ⇒
+                cookieDigest.value
+              }
+            }
+          }
         }
-      } match {
-        case None         ⇒ Unauthorized
-        case Some(digest) ⇒ block(request)
-      }
+
+      userDigest.fold(digest ⇒ {
+        block(request) match {
+          case pr: PlainResult ⇒ pr withSession {
+            request.session + ("userDigest" -> digest)
+          }
+          case res ⇒ res
+        }
+      }, Unauthorized)
     }
 }
