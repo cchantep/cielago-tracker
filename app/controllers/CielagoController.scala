@@ -1,7 +1,6 @@
 package cielago.controllers
 
-import scalaz.NonEmptyList
-import scalaz.Scalaz._
+import scalaz.{ NonEmptyList, Options }
 
 import play.api.db.DB
 
@@ -18,8 +17,7 @@ import play.api.mvc.{
 
 import cielago.models.ListInfo
 
-trait CielagoController extends Controller {
-
+trait CielagoController extends Controller with Options {
   protected def get(name: String)(implicit request: Request[_]) =
     request.queryString get name flatMap { _.headOption }
 

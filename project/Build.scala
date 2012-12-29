@@ -2,9 +2,8 @@ import java.io.File
 
 import sbt._
 import Keys._
-import PlayProject._
-
-import atewaza.DerbyTesting
+//import PlayProject._
+import play.{Project=>PlayProject}
 
 sealed trait Resolvers {
   val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
@@ -27,26 +26,16 @@ sealed trait Dependencies {
 }
 
 object ApplicationBuild extends Build
-    with Resolvers with Dependencies with DerbyTesting {
-
-  override val atewazaLogger = Some(ConsoleLogger())
-  override val atewazaDbPath = "target/testdb"
-  override val atewazaDbScripts =
-    Seq("schema", "constr", "fixtures") map { n ⇒
-      new File("project/test/" + n + ".sql")
-    }
+    with Resolvers with Dependencies {
 
   lazy val main = PlayProject(
     "Cielago-tracker",
-    "1.0.0",
-    mainLang = SCALA).settings(
+    "1.0.0").settings(
       resolvers ++= Seq(sonatype),
       libraryDependencies ++= compile
         ++ test.map { dep ⇒ dep % "test" }
-        ++ Seq("cchantep" %% "atewaza" % "1.0.0" % "test")
         ++ runtime.map { dep ⇒ dep % "runtime" },
-      testOptions := Seq(Tests.Setup(atewazaSetup _),
-        Tests.Cleanup(atewazaCleanup _)),
+      scalaVersion := "2.9.2",
       scalacOptions := Seq("-deprecation", "-unchecked"))
 
 }
