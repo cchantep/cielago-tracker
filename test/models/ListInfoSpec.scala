@@ -1,35 +1,43 @@
 package cielago.models
 
-import scalaz.{ Failure, Success, NonEmptyList }
+import scalaz.{ Failure, Success, Lists }
 
-import org.specs2.mutable._
+import org.specs2.mutable.Specification
 
-object ListInfoSpec extends Specification with DerbyConnection {
-  "= Specification for model of list information =" title
+object ListInfoSpec extends Specification {
+  "Specification for model of list information" title
 
   val all = List(ListInfo("list1", "test1"),
     ListInfo("list2", "test2"))
 
   "List of all information" should {
-
-    lazy val testRes = inDerby { implicit con ⇒ ListInfo.all }
+    lazy val testRes = List() /*
+    * TODO: inDerby { implicit con ⇒ ListInfo.all }
+    * */
 
     "be expected one" in {
-      testRes.fold(e ⇒ List(), list ⇒ list) must haveTheSameElementsAs(all)
+      todo
+      //testRes.fold(e ⇒ List(), list ⇒ list) must haveTheSameElementsAs(all)
     }
   }
 
   "No tracked list" should {
-    inDerby { implicit con ⇒
+    val tracked = List() /*TODO: inDerby { implicit con ⇒
       ListInfo.tracked("invalid")
-    }.fold({ f ⇒
+    }*/
+
+    todo
+    /*
+    tracked.fold({ f ⇒
       println("failures = %s" format f)
       failure
     }, info ⇒
       "be found for invalid user digest" in { info must beNone })
+*/
   }
 
   "Tracked lists" should {
+    /*
     inDerby { implicit con ⇒
       // test1:pass1
       ListInfo.tracked("31760a4f6e4e5edde51747a52f1a9628")
@@ -49,6 +57,9 @@ object ListInfoSpec extends Specification with DerbyConnection {
           case nel ⇒ nel.list must haveTheSameElementsAs(all)
         }
       })
+      * */
+
+    todo
   }
 
   // @todo high tracked for Manager
