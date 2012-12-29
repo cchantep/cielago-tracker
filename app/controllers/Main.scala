@@ -45,9 +45,10 @@ object Main extends CielagoController with Cielago {
       "order" -> list(nonEmptyText),
       "currentPage" -> number)(TrackRequest.apply)(TrackRequest.unapply))
 
-  val index = SecureAction { request ⇒ initialForm }
+  val index = SecureAction { authenticatedReq ⇒ initialForm }
 
-  def handleForm = SecureAction { implicit request ⇒
+  def handleForm = SecureAction { authenticatedReq ⇒
+    implicit val request = authenticatedReq.data
     val filledForm = trackForm.bindFromRequest
 
     filledForm.fold({ errf ⇒

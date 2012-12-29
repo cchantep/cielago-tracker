@@ -17,11 +17,16 @@ import play.api.mvc.{
 
 import cielago.models.ListInfo
 
+trait Authenticated[A] {
+  val data: A
+  val userDigest: String
+}
+
 trait CielagoController extends Controller with Options {
   protected def get(name: String)(implicit request: Request[_]) =
     request.queryString get name flatMap { _.headOption }
 
-  def SecureAction(block: (Request[AnyContent]) ⇒ Result): Action[AnyContent] =
+  def SecureAction(block: (Authenticated[Request[AnyContent]]) ⇒ Result): Action[AnyContent] =
     Action { request ⇒
       val userDigest: Option[String] = request.
         session.get("userDigest") orElse {
@@ -35,12 +40,21 @@ trait CielagoController extends Controller with Options {
         }
 
       userDigest.fold(digest ⇒ {
-        block(request) match {
+        val authenticatedReq = new Authenticated[Request[AnyContent]] {
+          override val data = request
+          override val userDigest = digest
+        }
+
+        block(authenticatedReq) match {
           case pr: PlainResult ⇒ pr withSession {
             request.session + ("userDigest" -> digest)
           }
           case res ⇒ res
         }
-      }, Unauthorized)
+      }, {
+        Unauthorized(views.html.unauthorized()) withHeaders {
+          "WWW-Authenticate" -> "Basic realm=\"Cielago\""
+        }
+      })
     }
 }
