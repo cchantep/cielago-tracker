@@ -5,12 +5,12 @@
 
 @import cielago.controllers.Main
 
-@layout("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.min.css"), List("js/sort.min.js", "js/track.min.js")) { lang =>
+@templates.authenticated("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.min.css"), List("js/sort.min.js", "js/track.min.js")) { lang =>
 @trackInner(lang, form, dispatchReport) { (locale, jsDatePat, uiDateFmt, startDate, endDate, pageCount) =>
 
 <div class="row-fluid well" id="track-criterias">
   @helper.form(action = cielago.controllers.routes.Main.handleForm, 'id -> "trackForm", 'class -> "form-horizontal") {
-  @defining(helper.FieldConstructor(field.f)) { implicit c =>
+  @defining(helper.FieldConstructor(templates.field.f)) { implicit c =>
 
     <fieldset>
       <legend>Critères de suivi</legend>
