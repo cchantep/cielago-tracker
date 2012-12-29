@@ -47,7 +47,7 @@ object Main extends CielagoController with Cielago {
 
   val index = SecureAction { authenticatedReq ⇒ initialForm }
 
-  def handleForm = SecureAction { authenticatedReq ⇒
+  val handleForm = SecureAction { authenticatedReq ⇒
     implicit val request = authenticatedReq.data
     val filledForm = trackForm.bindFromRequest
 
@@ -107,7 +107,7 @@ object Main extends CielagoController with Cielago {
     }
   }
 
-  private def initialForm: Result =
+  private lazy val initialForm: Result =
     Ok(views.html.track(ListApi.all,
       trackForm.fill(TrackRequest()),
       DispatchReport(0, 0),
