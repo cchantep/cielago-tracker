@@ -18,7 +18,7 @@ sealed trait Dependencies {
 
   val test =
     Seq( /*Specs*/
-      "commons-codec" % "commons-codec" % "1.6")
+      "commons-codec" % "commons-codec" % "1.7")
 
   val runtime =
     Seq("postgresql" % "postgresql" % "9.1-901.jdbc4")
