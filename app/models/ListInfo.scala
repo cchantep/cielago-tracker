@@ -2,8 +2,7 @@ package cielago.models
 
 import java.sql.Connection
 
-import scalaz.NonEmptyList
-import scalaz.Scalaz._
+import scalaz.{ Lists, NonEmptyList }
 
 import anorm.{ ~, SQL }
 import anorm.SqlParser.str
@@ -12,7 +11,7 @@ case class ListInfo(
   listId: String,
   accountName: String)
 
-object ListInfo {
+object ListInfo extends Lists {
 
   val mapping = str("list_id") ~ str("account_name")
 
@@ -20,11 +19,6 @@ object ListInfo {
     case listId ~ accountName ⇒
       ListInfo(listId, accountName)
   }
-
-  def all(implicit conn: Connection): List[ListInfo] =
-    SQL("""
-SELECT uuid AS list_id, login AS account_name FROM list_tbl
-""") as (parsing *)
 
   def tracked(userDigest: String)(implicit conn: Connection): Option[NonEmptyList[ListInfo]] =
     SQL("""
