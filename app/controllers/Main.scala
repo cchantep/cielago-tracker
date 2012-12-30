@@ -25,6 +25,7 @@ import cielago.models.{
   AscendingOrder,
   DescendingOrder,
   DispatchReport,
+  ListInfo,
   MessageReport,
   OrderClause,
   Paginated,
@@ -43,28 +44,32 @@ object Main extends CielagoController with Cielago {
       "endDate" -> optional(date("yyyy-MM-dd")),
       "listId" -> optional(nonEmptyText),
       "order" -> list(nonEmptyText),
-      "currentPage" -> number)(TrackRequest.apply)(TrackRequest.unapply))
+      "currentPage" -> optional(number))(TrackRequest.apply)(TrackRequest.unapply))
 
-  val index = SecureAction { authenticatedReq ⇒ initialForm }
+  val index = SecureAction { implicit authenticatedReq ⇒ initialForm }
 
-  val handleForm = SecureAction { authenticatedReq ⇒
-    implicit val request = authenticatedReq.data
+  val handleForm = SecureAction { implicit request ⇒
+    implicit val req = request.data
     val filledForm = trackForm.bindFromRequest
 
     filledForm.fold({ errf ⇒
       println("Invalid form data: %s" format errf)
 
-      // @todo low Display error on UI
-      Ok(views.html.track(ListApi.all, errf, DispatchReport(0, 0), Paginated[MessageReport]()))
-    }, tr ⇒ process(filledForm, tr))
+      trackResult { trackedLists ⇒
+        // @todo low Display error on UI
+        Ok(views.html.track(trackedLists,
+          errf,
+          DispatchReport(0, 0),
+          Paginated[MessageReport]()))
+
+      }
+    }, tr ⇒ process(filledForm, tr)(request))
   }
 
-  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Request[_]): Result = {
+  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Authenticated[Request[_]]): Result = {
 
-    /*
     println("start date = %s, end date = %s, list id = %s, page = %s".
       format(tr.startDate, tr.endDate, tr.listId, tr.currentPage))
-      */
 
     // @todo medium Direct 'match' on case class properties?
     val sel: Option[TrackSelector] =
@@ -93,24 +98,28 @@ object Main extends CielagoController with Cielago {
       case o     ⇒ o
     }
 
-    val pagination = Pagination(10, tr.currentPage, order)
+    val pagination = Pagination(10, tr.currentPage getOrElse 0, order)
 
-    sel match { // @todo medium Fold option?
-      case None ⇒ initialForm
-
-      case Some(s) ⇒ {
-        Ok(views.html.track(ListApi.all,
+    sel.fold({ s ⇒
+      trackResult { trackedLists ⇒
+        Ok(views.html.track(trackedLists,
           form,
           TrackApi.dispatchReport(s),
           TrackApi.messageReports(s, pagination)))
       }
-    }
+    }, initialForm)
+
   }
 
-  private lazy val initialForm: Result =
-    Ok(views.html.track(ListApi.all,
-      trackForm.fill(TrackRequest()),
-      DispatchReport(0, 0),
-      Paginated[MessageReport]()))
+  private def initialForm(implicit req: Authenticated[Request[_]]): Result =
+    trackResult { trackedLists ⇒
+      Ok(views.html.track(trackedLists,
+        trackForm.fill(TrackRequest()),
+        DispatchReport(0, 0),
+        Paginated[MessageReport]()))
+    }
+
+  private def trackResult(serve: List[ListInfo] ⇒ Result)(implicit req: Authenticated[Request[_]]): Result = ListApi.tracked(req.userDigest).
+    fold({ trackedLists ⇒ serve(trackedLists.list) }, NoTrackerAvailable)
 
 }

@@ -7,4 +7,4 @@ sealed case class TrackRequest(
   endDate: Option[Date] = None,
   listId: Option[String] = None,
   order: List[String] = List(),
-  currentPage: Int = 0)
+  currentPage: Option[Int] = None)
