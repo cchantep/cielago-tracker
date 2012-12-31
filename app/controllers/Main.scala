@@ -48,7 +48,9 @@ object Main extends CielagoController with Cielago with Booleans {
       "order" -> list(nonEmptyText),
       "currentPage" -> optional(number))(TrackRequest.apply)(TrackRequest.unapply))
 
-  val index = SecureAction { implicit authenticatedReq ⇒ initialForm }
+  val index = SecureAction { implicit authenticatedReq ⇒
+    trackResult { implicit trackedLists ⇒ initialForm }
+  }
 
   val handleForm = SecureAction { implicit request ⇒
     implicit val req = request.data
@@ -73,28 +75,15 @@ object Main extends CielagoController with Cielago with Booleans {
     println("start date = %s, end date = %s, list id = %s, page = %s".
       format(tr.startDate, tr.endDate, tr.listId, tr.currentPage))
 
-    // @todo medium Direct 'match' on case class properties?
-    val sel: Option[TrackSelector] =
-      (tr.startDate, tr.endDate, tr.listId) match {
-        case (None, None, Some(i))    ⇒ Some(TrackListSelector(i))
-        case (Some(s), Some(e), None) ⇒ Some(TrackPeriodSelector(s, e))
-
-        case (Some(s), Some(e), Some(i)) ⇒
-          Some(TrackPeriodListSelector(s, e, i))
-
-        case _ ⇒ None
-      }
-
     // Sets up pagination
-    val order = tr.order.foldLeft(Seq[OrderClause]()) {
-      (seq, str) ⇒
-        str.indexOf(":") match {
-          case -1 ⇒ seq
-          case i ⇒ seq :+ (str.splitAt(i) match {
-            case (c, ":DESC") ⇒ OrderClause(c, DescendingOrder)
-            case (c, _)       ⇒ OrderClause(c, AscendingOrder)
-          })
-        }
+    val order = tr.order.foldLeft(Seq[OrderClause]()) { (seq, str) ⇒
+      str.indexOf(":") match {
+        case -1 ⇒ seq
+        case i ⇒ seq :+ (str.splitAt(i) match {
+          case (c, ":DESC") ⇒ OrderClause(c, DescendingOrder)
+          case (c, _)       ⇒ OrderClause(c, AscendingOrder)
+        })
+      }
     } match {
       case Seq() ⇒ defaultOrder
       case o     ⇒ o
@@ -102,29 +91,43 @@ object Main extends CielagoController with Cielago with Booleans {
 
     val pagination = Pagination(10, tr.currentPage getOrElse 0, order)
 
-    sel.fold({ s ⇒
-      trackResult { trackedLists ⇒
+    trackResult { implicit trackedLists ⇒
+      val selListId = trackedLists.headOption flatMap { info ⇒
+        // Get id of single tracked mailinglist (if in this case)
+        (trackedLists.length == 1).fold(Some(info.listId), tr.listId)
+      }
+
+      val sel: Option[TrackSelector] =
+        (tr.startDate, tr.endDate, selListId) match {
+          case (None, None, Some(i))    ⇒ Some(TrackListSelector(i))
+          case (Some(s), Some(e), None) ⇒ Some(TrackPeriodSelector(s, e))
+
+          case (Some(s), Some(e), Some(i)) ⇒
+            Some(TrackPeriodListSelector(s, e, i))
+
+          case _ ⇒ None
+        }
+
+      sel.fold({ s ⇒
         Ok(views.html.track(trackedLists,
           form,
           TrackApi.dispatchReport(s),
           TrackApi.messageReports(s, pagination)))
-      }
-    }, initialForm)
-
+      }, initialForm)
+    }
   }
 
-  private def initialForm(implicit req: Authenticated[Request[_]]): Result =
-    trackResult { trackedLists ⇒
-      val defaultReq = TrackRequest(
-        listId = trackedLists.headOption.flatMap { info ⇒
-          (trackedLists.length == 1).fold(Some(info.listId), None)
-        })
+  private def initialForm(implicit trackedLists: List[ListInfo]): Result = {
+    val defaultReq = TrackRequest(
+      listId = trackedLists.headOption flatMap { info ⇒
+        (trackedLists.length == 1).fold(Some(info.listId), None)
+      })
 
-      Ok(views.html.track(trackedLists,
-        trackForm.fill(defaultReq),
-        DispatchReport(0, 0),
-        Paginated[MessageReport]()))
-    }
+    Ok(views.html.track(trackedLists,
+      trackForm.fill(defaultReq),
+      DispatchReport(0, 0),
+      Paginated[MessageReport]()))
+  }
 
   private def trackResult(serve: List[ListInfo] ⇒ Result)(implicit req: Authenticated[Request[_]]): Result = ListApi.tracked(req.userDigest).
     fold({ trackedLists ⇒ serve(trackedLists.list) }, NoTrackerAvailable)
