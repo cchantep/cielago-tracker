@@ -33,6 +33,8 @@ $("#startDate").on("changeDate", function(e) {
         var ts = date.getTime();
         var el = new Date(ts+86400000/*1d*/);
 
+        $("#endDateField").attr("value", _toDateString(el));
+
         end.datepicker("setStartDate", el);
         end.datepicker("setDate", el);
         end.removeAttr("disabled");

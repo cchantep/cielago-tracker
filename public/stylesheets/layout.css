@@ -1,5 +1,9 @@
-body {
-    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+.desktop-top {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 60px;
 }
 
 .navbar-fixed-top .cielago {

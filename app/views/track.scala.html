@@ -5,7 +5,7 @@
 
 @import cielago.controllers.Main
 
-@templates.authenticated("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.css"), List("js/sort.min.js", "js/track.min.js")) { lang =>
+@templates.authenticated("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.css"), "js/track.min.js"::messageReports.pagination.map{_=>List("js/sort.min.js")}.getOrElse{Nil}) { lang =>
 @trackInner(lang, form, dispatchReport) { (locale, jsDatePat, uiDateFmt, startDate, endDate, pageCount) =>
 
 <div class="row-fluid" id="track-criterias">
@@ -83,7 +83,7 @@
 </div>
 
 <div class="page-header">
-  <h1>Suivi des messages</h1>
+  <h1>Suivi messages</h1>
 
   <div id="summary" style="margin-bottom: 1em">
     <span class="label label-info">
@@ -166,5 +166,5 @@ var _s={clauses: @clauses, columns:{}}
 }
 }</script>
 
-}
-}
+}<!-- end of trackInner -->
+}<!-- end of templates.authenticated -->
