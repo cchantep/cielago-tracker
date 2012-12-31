@@ -14,22 +14,13 @@
 
     <fieldset>
       <legend>Critères de suivi</legend>
-
       <div class="control-group">
         <label class="control-label" for="mailinglist">Compte (liste)</label>
         <div class="controls">@defining(lists match {
-          case Nil => (Nil:List[(String,String)], true)
-          case s :: Nil => (List(s.listId->s.accountName), true)
-          case lists => 
-            (("","") :: lists.map{li=>(li.listId->li.accountName)}, false)
-        }) { opts =>
-          @if(opts._2) {
-            @helper.select(field = form("listId"), options = opts._1, 
-              'disabled -> "disabled")
-          } else {
-            @helper.select(field = form("listId"), options = opts._1)
-          }
-        }
+          case Nil => Nil:List[(String,String)]
+          case s :: Nil => List(s.listId->s.accountName)
+          case lists => ("","") :: lists.map{li=>(li.listId->li.accountName)}
+        }) { opts => @helper.select(field = form("listId"), options = opts) }
         </div>
 
         @helper.input(form("currentPage")) { (id, name, value, args) =>

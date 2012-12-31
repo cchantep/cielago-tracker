@@ -4,6 +4,8 @@ import java.util.{ Date, Locale }
 
 import java.text.SimpleDateFormat
 
+import scalaz.Booleans
+
 import play.api.Play
 
 import play.api.mvc.{ Controller, Request, Result }
@@ -36,7 +38,7 @@ import cielago.models.{
   TrackPeriodListSelector
 }
 
-object Main extends CielagoController with Cielago {
+object Main extends CielagoController with Cielago with Booleans {
   private val defaultOrder = Seq(OrderClause("sendTime", AscendingOrder))
 
   private lazy val trackForm = Form(
@@ -113,8 +115,13 @@ object Main extends CielagoController with Cielago {
 
   private def initialForm(implicit req: Authenticated[Request[_]]): Result =
     trackResult { trackedLists ⇒
+      val defaultReq = TrackRequest(
+        listId = trackedLists.headOption.flatMap { info ⇒
+          (trackedLists.length == 1).fold(Some(info.listId), None)
+        })
+
       Ok(views.html.track(trackedLists,
-        trackForm.fill(TrackRequest()),
+        trackForm.fill(defaultReq),
         DispatchReport(0, 0),
         Paginated[MessageReport]()))
     }
