@@ -108,15 +108,21 @@
         @helper.input(form("endDate")) { (_, _, v, _) =>
         <input type="hidden" name="endDate" value="@v" />
         }
+
+        @helper.input(form("currentPage")) { (_, _, v, _) =>
+        <input type="hidden" name="currentPage" value="@v" />
+        }
       }
 
     <div class="btn-group" id="pagination">
       @for(pi <- 0L until pageCount) {
         @if(pi == -1) {
           <button class="btn btn-inverse" 
+                  onclick="this.form.currentPage.value=this.value"
                   disabled="disabled" value="@pi">@{pi+1}</button>
         } else {
-          <button class="btn" value="@pi">@{pi+1}</button>
+          <button onclick="this.form.currentPage.value=this.value"
+                  class="btn" value="@pi">@{pi+1}</button>
         }
       }
     </div>
