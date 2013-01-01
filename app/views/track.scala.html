@@ -114,9 +114,10 @@
         }
       }
 
+    @defining(form.value.flatMap(_.currentPage).getOrElse(0)) { cp =>
     <div class="btn-group" id="pagination">
       @for(pi <- 0L until pageCount) {
-        @if(pi == -1) {
+        @if(pi == cp) {
           <button class="btn btn-inverse" 
                   onclick="this.form.currentPage.value=this.value"
                   disabled="disabled" value="@pi">@{pi+1}</button>
@@ -126,6 +127,7 @@
         }
       }
     </div>
+    }<!-- end of defining currentPage -->
     }<!-- end of form -->
   }
 </div>
