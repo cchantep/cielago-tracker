@@ -95,6 +95,6 @@ GROUP BY l.uuid,
           'listId -> c.listId)
     }
 
-    Paginated(Some(pagination), rs.as(parsing *))
+    Paginated(Some(pagination), rs.as(parsing.*))
   }
 }

@@ -25,6 +25,6 @@ object ListInfo extends Lists {
         SELECT list_uuid AS list_id, l.login AS account_name 
         FROM trackers t JOIN list_tbl l ON t.list_uuid=l.uuid 
         WHERE MD5(t.username || ':' || t.md5_secret) = {digest}
-        """).on('digest -> userDigest).as(parsing *).toNel
+        """).on('digest -> userDigest).as(parsing.*).toNel
 
 }

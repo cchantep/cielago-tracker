@@ -2,11 +2,12 @@ import java.io.File
 
 import sbt._
 import Keys._
-//import PlayProject._
-import play.{Project=>PlayProject}
+import play.Project._
 
 sealed trait Resolvers {
   val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
+  val applicius = "Applicius Snapshots" at "https://raw.github.com/applicius/mvn-repo/master/snapshots/"
+
 }
 
 /**
@@ -14,11 +15,13 @@ sealed trait Resolvers {
  */
 sealed trait Dependencies {
   val compile =
-    Seq("org.scalaz" %% "scalaz-core" % "6.0.4")
+    Seq("org.scalaz" %% "scalaz-core" % "6.0.4", jdbc, anorm)
 
   val test =
-    Seq( /*Specs*/
-      "commons-codec" % "commons-codec" % "1.7")
+    Seq(
+      "org.specs2" %% "specs2" % "1.14",
+      "commons-codec" % "commons-codec" % "1.7",
+      "acolyte" %% "acolyte-scala" % "1.0.1")
 
   val runtime =
     Seq("postgresql" % "postgresql" % "9.1-901.jdbc4")
@@ -28,14 +31,14 @@ sealed trait Dependencies {
 object ApplicationBuild extends Build
     with Resolvers with Dependencies {
 
-  lazy val main = PlayProject(
-    "Cielago-tracker",
-    "1.0.0").settings(
-      resolvers ++= Seq(sonatype),
-      libraryDependencies ++= compile
-        ++ test.map { dep ⇒ dep % "test" }
-        ++ runtime.map { dep ⇒ dep % "runtime" },
-      scalaVersion := "2.9.2",
-      scalacOptions := Seq("-deprecation", "-unchecked"))
+  lazy val appDependencies = 
+    compile ++ test.map { dep ⇒ dep % "test" } ++ runtime.
+      map { dep ⇒ dep % "runtime" }
+
+  lazy val main = play.Project("Cielago-tracker", "1.0.1", appDependencies).
+    settings(
+      scalaVersion := "2.10.0",
+      scalacOptions := Seq("-deprecation", "-unchecked", "-feature"),
+      resolvers := Seq(sonatype, applicius))
 
 }

@@ -8,7 +8,7 @@ import scalaz.Booleans
 
 import play.api.Play
 
-import play.api.mvc.{ Controller, Request, Result }
+import play.api.mvc.{ Controller, Request, SimpleResult }
 
 import play.api.data.Form
 import play.api.data.Forms.{
@@ -68,7 +68,7 @@ object Main extends CielagoController with Cielago with Booleans {
     }, tr ⇒ process(filledForm, tr)(request))
   }
 
-  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Authenticated[Request[_]]): Result = {
+  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Authenticated[Request[_]]): SimpleResult = {
 
     /*
     println("start date = %s, end date = %s, list id = %s, page = %s".
@@ -102,17 +102,17 @@ object Main extends CielagoController with Cielago with Booleans {
         case _ ⇒ None
       }
 
-    sel.fold({ s ⇒
+    sel.fold(initialForm) { s ⇒
       trackResult { implicit trackedLists ⇒
         Ok(views.html.track(trackedLists,
           form,
           TrackApi.dispatchReport(request.userDigest, s),
           TrackApi.messageReports(request.userDigest, s, pagination)))
       }
-    }, initialForm)
+    }
   }
 
-  private def initialForm(implicit req: Authenticated[Request[_]]): Result =
+  private def initialForm(implicit req: Authenticated[Request[_]]): SimpleResult =
     trackResult { implicit trackedLists ⇒
       val defaultReq = TrackRequest(
         listId = trackedLists.headOption flatMap { info ⇒
@@ -125,7 +125,7 @@ object Main extends CielagoController with Cielago with Booleans {
         Paginated[MessageReport]()))
     }
 
-  private def trackResult(serve: List[ListInfo] ⇒ Result)(implicit req: Authenticated[Request[_]]): Result = ListApi.tracked(req.userDigest).
-    fold({ trackedLists ⇒ serve(trackedLists.list) }, NoTrackerAvailable)
+  private def trackResult(serve: List[ListInfo] ⇒ SimpleResult)(implicit req: Authenticated[Request[_]]): SimpleResult = ListApi.tracked(req.userDigest).
+    fold(NoTrackerAvailable) { trackedLists ⇒ serve(trackedLists.list) }
 
 }

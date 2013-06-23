@@ -22,9 +22,9 @@ trait Cielago extends Validations with Identitys {
       t.printStackTrace(w)
       w.flush()
 
-      buff.toString wrapNel
+      buff.toString.wrapNel
     } catch {
-      case _ ⇒ t.getMessage wrapNel
+      case _: Throwable ⇒ t.getMessage.wrapNel
     } finally {
       try {
         w.close()

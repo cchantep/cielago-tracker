@@ -13,7 +13,7 @@ import play.api.mvc.{
   Action,
   AnyContent,
   Controller,
-  PlainResult,
+  SimpleResult,
   Request,
   Result
 }
@@ -29,7 +29,7 @@ trait CielagoController extends Controller with Options with Identitys {
   protected def get(name: String)(implicit request: Request[_]) =
     request.queryString get name flatMap { _.headOption }
 
-  def SecureAction(block: (Authenticated[Request[AnyContent]]) ⇒ Result): Action[AnyContent] =
+  def SecureAction(block: (Authenticated[Request[AnyContent]]) ⇒ SimpleResult): Action[AnyContent] =
     Action { request ⇒
       val userDigest: Option[String] = request.
         session.get("userDigest") /* already logged in */ orElse {
@@ -42,19 +42,16 @@ trait CielagoController extends Controller with Options with Identitys {
           }
         }
 
-      userDigest.fold(digest ⇒ {
+      userDigest.fold(NoTrackerAvailable) { digest ⇒ 
         val authenticatedReq = new Authenticated[Request[AnyContent]] {
           override val data = request
           override val userDigest = digest
         }
 
-        block(authenticatedReq) match {
-          case pr: PlainResult ⇒ pr withSession {
-            request.session + ("userDigest" -> digest)
-          }
-          case res ⇒ res
+        block(authenticatedReq) withSession {
+          request.session + ("userDigest" -> digest)
         }
-      }, NoTrackerAvailable)
+      }
     }
 
   protected val NoTrackerAvailable =
