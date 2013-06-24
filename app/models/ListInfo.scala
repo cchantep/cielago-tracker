@@ -12,16 +12,13 @@ case class ListInfo(
   accountName: String)
 
 object ListInfo extends Lists {
-
   val mapping = str("list_id") ~ str("account_name")
 
   val parsing = mapping map {
-    case listId ~ accountName ⇒
-      ListInfo(listId, accountName)
+    case listId ~ accountName ⇒ ListInfo(listId, accountName)
   }
 
-  def tracked(userDigest: String)(implicit conn: Connection): Option[NonEmptyList[ListInfo]] =
-    SQL("""
+  def tracked(userDigest: String)(implicit conn: Connection): Option[NonEmptyList[ListInfo]] = SQL("""
         SELECT list_uuid AS list_id, l.login AS account_name 
         FROM trackers t JOIN list_tbl l ON t.list_uuid=l.uuid 
         WHERE MD5(t.username || ':' || t.md5_secret) = {digest}
