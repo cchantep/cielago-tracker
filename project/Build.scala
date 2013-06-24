@@ -21,7 +21,7 @@ sealed trait Dependencies {
     Seq(
       "org.specs2" %% "specs2" % "1.14",
       "commons-codec" % "commons-codec" % "1.7",
-      "acolyte" %% "acolyte-scala" % "1.0.1")
+      "acolyte" %% "acolyte-scala" % "1.0.2")
 
   val runtime =
     Seq("postgresql" % "postgresql" % "9.1-901.jdbc4")
