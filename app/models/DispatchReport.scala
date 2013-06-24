@@ -9,11 +9,10 @@ import anorm.SqlParser.{ date, long, scalar }
 
 case class DispatchReport(messages: Long, recipients: Long)
 
-object DispatchReport {
+object DispatchReport extends DispatchReportClauses {
   val parsing = long("message_count") ~
     long("recipient_count") map {
-      case messages ~ recipients ⇒
-        DispatchReport(messages, recipients)
+      case messages ~ recipients ⇒ DispatchReport(messages, recipients)
     }
 
   def report(userDigest: String, selector: TrackSelector)(implicit conn: Connection): DispatchReport = {
@@ -29,29 +28,35 @@ object DispatchReport {
 
     val rs = selector match {
       case a: TrackPeriodSelector ⇒
-        SQL(sql format """
-          m.send_time >= {startTime} AND m.send_time <= {endTime} 
-          AND EXISTS (SELECT NULL FROM trackers t 
-            WHERE MD5(t.username || ':' || t.md5_secret) = {digest} 
-            AND t.list_uuid=m.list_uuid)""").
+        SQL(sql format periodClause).
           on('startTime -> a.startDate.getTime,
             'endTime -> a.endDate.getTime,
             'digest -> userDigest)
 
       case b: TrackListSelector ⇒
-        SQL(sql format "m.list_uuid = {listId}").
-          on('listId -> b.listId)
+        SQL(sql format listClause).on('listId -> b.listId)
 
       case c: TrackPeriodListSelector ⇒
-        SQL(sql format """
-            m.send_time >= {startTime} 
-              AND m.send_time <= {endTime} 
-              AND m.list_uuid = {listId}
-            """).on('startTime -> c.startDate.getTime,
-          'endTime -> c.endDate.getTime,
-          'listId -> c.listId)
+        SQL(sql format periodListClause).
+          on('startTime -> c.startDate.getTime,
+            'endTime -> c.endDate.getTime,
+            'listId -> c.listId)
     }
 
     rs.as(parsing.single)
   }
+}
+
+trait DispatchReportClauses {
+  val periodClause = """m.send_time >= {startTime} AND m.send_time <= {endTime} 
+    AND EXISTS (SELECT NULL FROM trackers t 
+      WHERE MD5(t.username || ':' || t.md5_secret) = {digest} 
+      AND t.list_uuid=m.list_uuid)"""
+
+  val listClause = "m.list_uuid = {listId}"
+
+  val periodListClause = """m.send_time >= {startTime} 
+    AND m.send_time <= {endTime} 
+    AND m.list_uuid = {listId}"""
+
 }
