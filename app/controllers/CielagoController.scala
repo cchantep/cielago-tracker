@@ -25,7 +25,15 @@ trait Authenticated[+A] {
   val userDigest: String
 }
 
-trait CielagoController extends Controller with Options with Identitys {
+trait CielagoResults { controller: Controller ⇒
+  val NoTrackerAvailable = Unauthorized(views.html.unauthorized()) withHeaders {
+    "WWW-Authenticate" -> "Basic realm=\"Cielago\""
+  }
+}
+
+trait CielagoController extends Controller
+    with CielagoResults with Options with Identitys {
+
   protected def get(name: String)(implicit request: Request[_]) =
     request.queryString get name flatMap { _.headOption }
 
@@ -42,7 +50,7 @@ trait CielagoController extends Controller with Options with Identitys {
           }
         }
 
-      userDigest.fold(NoTrackerAvailable) { digest ⇒ 
+      userDigest.fold(NoTrackerAvailable) { digest ⇒
         val authenticatedReq = new Authenticated[Request[AnyContent]] {
           override val data = request
           override val userDigest = digest
@@ -52,11 +60,6 @@ trait CielagoController extends Controller with Options with Identitys {
           request.session + ("userDigest" -> digest)
         }
       }
-    }
-
-  protected val NoTrackerAvailable =
-    Unauthorized(views.html.unauthorized()) withHeaders {
-      "WWW-Authenticate" -> "Basic realm=\"Cielago\""
     }
 
   // e.g. Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
