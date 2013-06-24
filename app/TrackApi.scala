@@ -8,13 +8,12 @@ import models.{ DispatchReport, MessageReport, Paginated, Pagination, TrackSelec
 
 object TrackApi {
 
-  def dispatchReport(selector: TrackSelector): DispatchReport =
-    DB withConnection { implicit conn ⇒
-      DispatchReport.report(selector)
-    }
+  def dispatchReport(userDigest: String, selector: TrackSelector): DispatchReport = DB withConnection { implicit conn ⇒
+    DispatchReport.report(userDigest, selector)
+  }
 
-  def messageReports(selector: TrackSelector, pagination: Pagination): Paginated[MessageReport] =
+  def messageReports(userDigest: String, selector: TrackSelector, pagination: Pagination): Paginated[MessageReport] =
     DB withConnection { implicit conn ⇒
-      MessageReport.find(selector, pagination)
+      MessageReport.find(userDigest, selector, pagination)
     }
 }

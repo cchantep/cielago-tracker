@@ -4,9 +4,11 @@ import java.util.{ Date, Locale }
 
 import java.text.SimpleDateFormat
 
+import scalaz.Booleans
+
 import play.api.Play
 
-import play.api.mvc.{ Controller, Request, Result }
+import play.api.mvc.{ Controller, Request, SimpleResult }
 
 import play.api.data.Form
 import play.api.data.Forms.{
@@ -25,6 +27,7 @@ import cielago.models.{
   AscendingOrder,
   DescendingOrder,
   DispatchReport,
+  ListInfo,
   MessageReport,
   OrderClause,
   Paginated,
@@ -35,7 +38,7 @@ import cielago.models.{
   TrackPeriodListSelector
 }
 
-object Main extends CielagoController with Cielago {
+object Main extends CielagoController with Cielago with Booleans {
   private val defaultOrder = Seq(OrderClause("sendTime", AscendingOrder))
 
   private lazy val trackForm = Form(
@@ -43,29 +46,51 @@ object Main extends CielagoController with Cielago {
       "endDate" -> optional(date("yyyy-MM-dd")),
       "listId" -> optional(nonEmptyText),
       "order" -> list(nonEmptyText),
-      "currentPage" -> number)(TrackRequest.apply)(TrackRequest.unapply))
+      "currentPage" -> optional(number))(TrackRequest.apply)(TrackRequest.unapply))
 
-  def index = SecureAction { request ⇒ initialForm }
+  val index = SecureAction { implicit authenticatedReq ⇒ initialForm }
 
-  def handleForm = SecureAction { implicit request ⇒
+  val handleForm = SecureAction { implicit request ⇒
+    implicit val req = request.data
     val filledForm = trackForm.bindFromRequest
 
     filledForm.fold({ errf ⇒
       println("Invalid form data: %s" format errf)
 
-      // @todo low Display error on UI
-      Ok(views.html.track(ListApi.all, errf, DispatchReport(0, 0), Paginated[MessageReport]()))
-    }, tr ⇒ process(filledForm, tr))
+      trackResult { trackedLists ⇒
+        // @todo low Display error on UI
+        Ok(views.html.track(trackedLists,
+          errf,
+          DispatchReport(0, 0),
+          Paginated[MessageReport]()))
+
+      }
+    }, tr ⇒ process(filledForm, tr)(request))
   }
 
-  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Request[_]): Result = {
+  private def process(form: Form[TrackRequest], tr: TrackRequest)(implicit request: Authenticated[Request[_]]): SimpleResult = {
 
     /*
     println("start date = %s, end date = %s, list id = %s, page = %s".
       format(tr.startDate, tr.endDate, tr.listId, tr.currentPage))
       */
 
-    // @todo medium Direct 'match' on case class properties?
+    // Sets up pagination
+    val order = tr.order.foldLeft(Seq[OrderClause]()) { (seq, str) ⇒
+      str.indexOf(":") match {
+        case -1 ⇒ seq
+        case i ⇒ seq :+ (str.splitAt(i) match {
+          case (c, ":DESC") ⇒ OrderClause(c, DescendingOrder)
+          case (c, _)       ⇒ OrderClause(c, AscendingOrder)
+        })
+      }
+    } match {
+      case Seq() ⇒ defaultOrder
+      case o     ⇒ o
+    }
+
+    val pagination = Pagination(10, tr.currentPage getOrElse 0, order)
+
     val sel: Option[TrackSelector] =
       (tr.startDate, tr.endDate, tr.listId) match {
         case (None, None, Some(i))    ⇒ Some(TrackListSelector(i))
@@ -77,39 +102,30 @@ object Main extends CielagoController with Cielago {
         case _ ⇒ None
       }
 
-    // Sets up pagination
-    val order = tr.order.foldLeft(Seq[OrderClause]()) {
-      (seq, str) ⇒
-        str.indexOf(":") match {
-          case -1 ⇒ seq
-          case i ⇒ seq :+ (str.splitAt(i) match {
-            case (c, ":DESC") ⇒ OrderClause(c, DescendingOrder)
-            case (c, _)       ⇒ OrderClause(c, AscendingOrder)
-          })
-        }
-    } match {
-      case Seq() ⇒ defaultOrder
-      case o     ⇒ o
-    }
-
-    val pagination = Pagination(10, tr.currentPage, order)
-
-    sel match { // @todo medium Fold option?
-      case None ⇒ initialForm
-
-      case Some(s) ⇒ {
-        Ok(views.html.track(ListApi.all,
+    sel.fold(initialForm) { s ⇒
+      trackResult { implicit trackedLists ⇒
+        Ok(views.html.track(trackedLists,
           form,
-          TrackApi.dispatchReport(s),
-          TrackApi.messageReports(s, pagination)))
+          TrackApi.dispatchReport(request.userDigest, s),
+          TrackApi.messageReports(request.userDigest, s, pagination)))
       }
     }
   }
 
-  private def initialForm: Result =
-    Ok(views.html.track(ListApi.all,
-      trackForm.fill(TrackRequest()),
-      DispatchReport(0, 0),
-      Paginated[MessageReport]()))
+  private def initialForm(implicit req: Authenticated[Request[_]]): SimpleResult =
+    trackResult { implicit trackedLists ⇒
+      val defaultReq = TrackRequest(
+        listId = trackedLists.headOption flatMap { info ⇒
+          (trackedLists.length == 1).fold(Some(info.listId), None)
+        })
+
+      Ok(views.html.track(trackedLists,
+        trackForm.fill(defaultReq),
+        DispatchReport(0, 0),
+        Paginated[MessageReport]()))
+    }
+
+  private def trackResult(serve: List[ListInfo] ⇒ SimpleResult)(implicit req: Authenticated[Request[_]]): SimpleResult = ListApi.tracked(req.userDigest).
+    fold(NoTrackerAvailable) { trackedLists ⇒ serve(trackedLists.list) }
 
 }

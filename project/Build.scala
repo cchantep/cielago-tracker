@@ -2,12 +2,12 @@ import java.io.File
 
 import sbt._
 import Keys._
-import PlayProject._
-
-import atewaza.DerbyTesting
+import play.Project._
 
 sealed trait Resolvers {
   val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
+  val applicius = "Applicius Snapshots" at "https://raw.github.com/applicius/mvn-repo/master/snapshots/"
+
 }
 
 /**
@@ -15,11 +15,13 @@ sealed trait Resolvers {
  */
 sealed trait Dependencies {
   val compile =
-    Seq("org.scalaz" %% "scalaz-core" % "6.0.4")
+    Seq("org.scalaz" %% "scalaz-core" % "6.0.4", jdbc, anorm)
 
   val test =
-    Seq( /*Specs*/
-      "commons-codec" % "commons-codec" % "1.6")
+    Seq(
+      "org.specs2" %% "specs2" % "1.14",
+      "commons-codec" % "commons-codec" % "1.7",
+      "acolyte" %% "acolyte-scala" % "1.0.2")
 
   val runtime =
     Seq("postgresql" % "postgresql" % "9.1-901.jdbc4")
@@ -27,25 +29,16 @@ sealed trait Dependencies {
 }
 
 object ApplicationBuild extends Build
-    with Resolvers with Dependencies with DerbyTesting {
+    with Resolvers with Dependencies {
 
-  override val atewazaDbPath = "target/testdb"
-  override val atewazaDbScripts =
-    Seq("schema", "constr", "fixtures") map { n ⇒
-      new File("project/test/" + n + ".sql")
-    }
+  lazy val appDependencies = 
+    compile ++ test.map { dep ⇒ dep % "test" } ++ runtime.
+      map { dep ⇒ dep % "runtime" }
 
-  lazy val main = PlayProject(
-    "Cielago-tracker",
-    "1.0-SNAPSHOT",
-    mainLang = SCALA).settings(
-      resolvers ++= Seq(sonatype),
-      libraryDependencies ++= compile
-        ++ test.map { dep ⇒ dep % "test" }
-        ++ atewazaTestDependencies
-        ++ runtime.map { dep ⇒ dep % "runtime" },
-      testOptions := Seq(Tests.Setup(atewazaSetup _),
-        Tests.Cleanup(atewazaCleanup _)),
-      scalacOptions := Seq("-deprecation", "-unchecked"))
+  lazy val main = play.Project("Cielago-tracker", "1.0.1", appDependencies).
+    settings(
+      scalaVersion := "2.10.0",
+      scalacOptions := Seq("-deprecation", "-unchecked", "-feature"),
+      resolvers := Seq(sonatype, applicius))
 
 }

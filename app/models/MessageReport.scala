@@ -41,7 +41,7 @@ object MessageReport {
           recipientCount)
     }
 
-  def find(selector: TrackSelector, pagination: Pagination)(implicit conn: Connection): Paginated[MessageReport] = {
+  def find(userDigest: String, selector: TrackSelector, pagination: Pagination)(implicit conn: Connection): Paginated[MessageReport] = {
 
     val order = Pagination.sqlOrder(pagination.order, colMap)
 
@@ -71,26 +71,30 @@ GROUP BY l.uuid,
 
     val rs = selector match {
       case a: TrackPeriodSelector ⇒
-        SQL(sql format
-          "m.send_time >= {startTime} AND m.send_time <= {endTime}").
-          on("startTime" -> a.startDate.getTime,
-            "endTime" -> a.endDate.getTime)
+        SQL(sql format """
+          m.send_time >= {startTime} AND m.send_time <= {endTime}
+          AND EXISTS (SELECT NULL FROM trackers t 
+            WHERE MD5(t.username || ':' || t.md5_secret) = {digest} 
+            AND t.list_uuid=l.uuid)
+          """).
+          on('startTime -> a.startDate.getTime,
+            'endTime -> a.endDate.getTime,
+            'digest -> userDigest)
 
       case b: TrackListSelector ⇒
         SQL(sql format "l.uuid = {listId}").
-          on("listId" -> b.listId)
+          on('listId -> b.listId)
 
       case c: TrackPeriodListSelector ⇒
-        SQL(sql format
-          """
-m.send_time >= {startTime} 
-  AND m.send_time <= {endTime} 
-  AND l.uuid = {listId}
-""").on("startTime" -> c.startDate.getTime,
-          "endTime" -> c.endDate.getTime,
-          "listId" -> c.listId)
+        SQL(sql format """
+          m.send_time >= {startTime} 
+            AND m.send_time <= {endTime} 
+            AND l.uuid = {listId}
+          """).on('startTime -> c.startDate.getTime,
+          'endTime -> c.endDate.getTime,
+          'listId -> c.listId)
     }
 
-    Paginated(Some(pagination), rs.as(parsing *))
+    Paginated(Some(pagination), rs.as(parsing.*))
   }
 }

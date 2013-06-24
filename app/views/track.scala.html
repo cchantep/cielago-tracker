@@ -5,21 +5,22 @@
 
 @import cielago.controllers.Main
 
-@layout("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.min.css"), List("js/sort.min.js", "js/track.min.js")) { lang =>
+@templates.authenticated("Suivi consommation", List("bootstrap-datepicker/css/datepicker.min.css", "bootstrap-datatable/css/datatable.min.css", "stylesheets/track.css"), "js/track.min.js"::messageReports.pagination.map{_=>List("js/sort.min.js")}.getOrElse{Nil}) { lang =>
 @trackInner(lang, form, dispatchReport) { (locale, jsDatePat, uiDateFmt, startDate, endDate, pageCount) =>
 
-<div class="row-fluid well" id="track-criterias">
-  @helper.form(action = cielago.controllers.routes.Main.handleForm, 'id -> "trackForm", 'class -> "form-horizontal") {
-  @defining(helper.FieldConstructor(field.f)) { implicit c =>
+<div class="row-fluid" id="track-criterias">
+  @helper.form(action = cielago.controllers.routes.Main.handleForm, 'id -> "trackForm", 'class -> "form-horizontal well") {
+  @defining(helper.FieldConstructor(templates.field.f)) { implicit c =>
 
     <fieldset>
       <legend>Critères de suivi</legend>
-
       <div class="control-group">
         <label class="control-label" for="mailinglist">Compte (liste)</label>
-        <div class="controls">
-          @helper.select(field = form("listId"), 
-            options = ("","") :: lists.map{li=>(li.listId,li.accountName)})
+        <div class="controls">@defining(lists match {
+          case Nil => Nil:List[(String,String)]
+          case s :: Nil => List(s.listId->s.accountName)
+          case lists => ("","") :: lists.map{li=>(li.listId->li.accountName)}
+        }) { opts => @helper.select(field = form("listId"), options = opts) }
         </div>
 
         @helper.input(form("currentPage")) { (id, name, value, args) =>
@@ -27,10 +28,11 @@
                  name="currentPage" value="@value" />
           <input type="hidden" name="lang" value="@lang" />
         }
-
+      </div>
+      <div class="control-group">
         <label class="control-label" for="startDate">Période</label>
         <div class="controls" id="period">
-          @helper.input(form("startDate")) { (id, name, value, args) =>
+          @helper.input(form("startDate")) { (_, _, value, _) =>
             @defining(startDate match {
               case None => Map('value -> "")
               case Some(d) => Map('value -> uiDateFmt.format(d))
@@ -46,7 +48,7 @@
 
           <label for="endDate">au</label>
 
-          @helper.input(form("endDate")) { (id, name, value, args) =>
+          @helper.input(form("endDate")) { (_, _, value, _) =>
             @defining(endDate match {
               case None => Map('disabled -> "disabled", 'value -> "")
               case Some(d) => Map('value -> uiDateFmt.format(d))
@@ -72,9 +74,9 @@
 </div>
 
 <div class="page-header">
-  <h1>
-    Suivi des messages
+  <h1>Suivi messages</h1>
 
+  <div id="summary" style="margin-bottom: 1em">
     <span class="label label-info">
       @if(dispatchReport.recipients <= 1) {
         @dispatchReport.recipients envoi
@@ -90,24 +92,43 @@
         @dispatchReport.messages messages
       }
     </span>
-  </h1>
+  </div>
 
-  @defining(form.value match {
-    case None => 0
-    case Some(tr) => tr.currentPage
-  }) { currentPage =>
-  <form name="paginationForm" action="#">
+  @form.value.map{ tr =>
+    @helper.form(action = cielago.controllers.routes.Main.handleForm, 'id -> "paginationForm") {
+      @defining(helper.FieldConstructor(templates.field.f)) { implicit c =>
+        @helper.input(form("listId")) { (_, _, v, _) =>
+        <input type="hidden" name="listId" value="@v" />
+        }
+
+        @helper.input(form("startDate")) { (_, _, v, _) =>
+        <input type="hidden" name="startDate" value="@v" />
+        }
+
+        @helper.input(form("endDate")) { (_, _, v, _) =>
+        <input type="hidden" name="endDate" value="@v" />
+        }
+
+        @helper.input(form("currentPage")) { (_, _, v, _) =>
+        <input type="hidden" name="currentPage" value="@v" />
+        }
+      }
+
+    @defining(form.value.flatMap(_.currentPage).getOrElse(0)) { cp =>
     <div class="btn-group" id="pagination">
       @for(pi <- 0L until pageCount) {
-        @if(pi == currentPage) {
+        @if(pi == cp) {
           <button class="btn btn-inverse" 
+                  onclick="this.form.currentPage.value=this.value"
                   disabled="disabled" value="@pi">@{pi+1}</button>
         } else {
-          <button class="btn" value="@pi">@{pi+1}</button>
+          <button onclick="this.form.currentPage.value=this.value"
+                  class="btn" value="@pi">@{pi+1}</button>
         }
       }
     </div>
-  </form>
+    }<!-- end of defining currentPage -->
+    }<!-- end of form -->
   }
 </div>
 
@@ -140,9 +161,9 @@
     case s => "{'" + c.column + "':'" + c.direction.code + "'," + s.substring(1)
   }
 }) { clauses =>
-var _s = {clauses: @clauses, columns:{}}
+var _s={clauses: @clauses, columns:{}}
 }
 }</script>
 
-}
-}
+}<!-- end of trackInner -->
+}<!-- end of templates.authenticated -->

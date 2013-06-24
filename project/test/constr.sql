@@ -90,14 +90,7 @@ FOR EACH ROW
 -- manager_tbl
 ALTER TABLE manager_tbl 
 ADD CONSTRAINT manager_pk 
-PRIMARY KEY(list_uuid, username);
-
-ALTER TABLE manager_tbl 
-ADD CONSTRAINT manager_list_fk 
-FOREIGN KEY(list_uuid) 
-REFERENCES list_tbl(uuid);
-
-CREATE INDEX manager_list_idx ON manager_tbl(list_uuid);
+PRIMARY KEY(username);
 
 CREATE INDEX manager_username_idx ON manager_tbl(username);
 

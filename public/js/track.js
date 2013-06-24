@@ -3,7 +3,7 @@ $("document").ready(function() {
 
     if (start != "") {
         var date = new Date(start);
-        var el = new Date(date.getTime()+86400/*1d*/);
+        var el = new Date(date.getTime()+86400000/*1d*/);
         
         $("#endDate").datepicker("setStartDate", el);
     } // end of if
@@ -12,7 +12,7 @@ $("document").ready(function() {
 
     if (end != "") {
         var date = new Date(end);
-        var sl = new Date(date.getTime()-86400/*1d*/);
+        var sl = new Date(date.getTime()-86400000/*1d*/);
 
         $("#startDate").datepicker("setEndDate", sl);
     } // end of if
@@ -24,15 +24,16 @@ $("#startDate").on("changeDate", function(e) {
     var date = e.date;
 
     $("#startDateField").attr("value", _toDateString(date));
+    $("#startDate").data("date-format", "yyyy-mm-dd");
 
     var end = $("#endDate");
     var v = end.attr("value");
 
     if (v == null || v.length == 0) {
         var ts = date.getTime();
-        var el = new Date(ts+86400/*1d*/);
+        var el = new Date(ts+86400000/*1d*/);
 
-        console.log("##> " + end.datepicker("language").toSource());
+        $("#endDateField").attr("value", _toDateString(el));
 
         end.datepicker("setStartDate", el);
         end.datepicker("setDate", el);
@@ -45,7 +46,7 @@ $("#endDate").on("changeDate", function(e) {
 
     $("#endDateField").attr("value", _toDateString(date));
 
-    var sl = new Date(date.getTime()-86400/*1d*/);
+    var sl = new Date(date.getTime()-86400000/*1d*/);
     var s = $("#startDate");
     
     s.datepicker("setEndDate", sl);
