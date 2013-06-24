@@ -37,30 +37,29 @@ trait CielagoController extends Controller
   protected def get(name: String)(implicit request: Request[_]) =
     request.queryString get name flatMap { _.headOption }
 
-  def SecureAction(block: (Authenticated[Request[AnyContent]]) ⇒ SimpleResult): Action[AnyContent] =
-    Action { request ⇒
-      val userDigest: Option[String] = request.
-        session.get("userDigest") /* already logged in */ orElse {
-          request.cookies.get("userDigest").map(_.value) orElse {
-            request.headers.get("authorization").flatMap(basicDigest(_))
-          } flatMap { digest /* request digest */ ⇒
-            DB withConnection { implicit conn ⇒
-              ListInfo.tracked(digest) map { _ ⇒ digest }
-            }
+  def SecureAction(block: (Authenticated[Request[AnyContent]]) ⇒ SimpleResult): Action[AnyContent] = Action { request ⇒
+    val userDigest: Option[String] = request.
+      session.get("userDigest") /* already logged in */ orElse {
+        request.cookies.get("userDigest").map(_.value) orElse {
+          request.headers.get("authorization").flatMap(basicDigest(_))
+        } flatMap { digest /* request digest */ ⇒
+          DB withConnection { implicit conn ⇒
+            ListInfo.tracked(digest) map { _ ⇒ digest }
           }
         }
+      }
 
-      userDigest.fold(NoTrackerAvailable) { digest ⇒
-        val authenticatedReq = new Authenticated[Request[AnyContent]] {
-          override val data = request
-          override val userDigest = digest
-        }
+    userDigest.fold(NoTrackerAvailable) { digest ⇒
+      val authenticatedReq = new Authenticated[Request[AnyContent]] {
+        override val data = request
+        override val userDigest = digest
+      }
 
-        block(authenticatedReq) withSession {
-          request.session + ("userDigest" -> digest)
-        }
+      block(authenticatedReq) withSession {
+        request.session + ("userDigest" -> digest)
       }
     }
+  }
 
   // e.g. Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==
   private def basicDigest(authHeader: String): Option[String] =

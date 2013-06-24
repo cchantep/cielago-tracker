@@ -6,9 +6,6 @@ import scala.util.{ Failure, Success }
 
 import scala.concurrent.Future
 
-import scalaz.NonEmptyList
-import scalaz.Scalaz._
-
 import org.specs2.mutable.Specification
 
 import play.api.Play.current

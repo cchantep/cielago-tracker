@@ -7,3 +7,5 @@ tmp
 dist
 derby.log
 .ensime_lucene
+.ensime
+*~
