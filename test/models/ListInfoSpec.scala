@@ -4,63 +4,45 @@ import scalaz.{ Failure, Success, Lists }
 
 import org.specs2.mutable.Specification
 
-object ListInfoSpec extends Specification {
-  "Specification for model of list information" title
+object ListInfoSpec extends Specification with ListInfoFixtures {
+  "List information" title
 
-  val all = List(ListInfo("list1", "test1"),
-    ListInfo("list2", "test2"))
-
-  "List of all information" should {
-    lazy val testRes = List() /*
-    * TODO: inDerby { implicit con ⇒ ListInfo.all }
-    * */
-
+  "No tracked list" should {
     "be expected one" in {
-      todo
-      //testRes.fold(e ⇒ List(), list ⇒ list) must haveTheSameElementsAs(all)
+      ListInfo.tracked("none")(noCon) aka "tracked" must beNone
     }
   }
 
-  "No tracked list" should {
-    val tracked = List() /*TODO: inDerby { implicit con ⇒
-      ListInfo.tracked("invalid")
-    }*/
-
-    todo
-    /*
-    tracked.fold({ f ⇒
-      println("failures = %s" format f)
-      failure
-    }, info ⇒
-      "be found for invalid user digest" in { info must beNone })
-*/
+  "All information" should {
+    "be expected one" in {
+      ListInfo.tracked("digest")(allCon) aka "tracked" must beSome.which {
+        _.list aka "lists" must haveTheSameElementsAs(all)
+      }
+    }
   }
+}
 
-  "Tracked lists" should {
-    /*
-    inDerby { implicit con ⇒
-      // test1:pass1
-      ListInfo.tracked("31760a4f6e4e5edde51747a52f1a9628")
-    }.fold(e ⇒ failure, info ⇒
-      "only be list1 for user test1" in {
-        info must beSome.like {
-          case nel ⇒ nel.list must contain(ListInfo("list1", "test1")).only
-        }
-      })
+sealed trait ListInfoFixtures {
+  import acolyte.RowLists.rowList2
+  import acolyte.Rows.row2
+  import acolyte.{ RowList, Row2 }
+  import acolyte.Acolyte._
 
-    inDerby { implicit con ⇒
-      // manager:pass_manager
-      ListInfo.tracked("ffa220080eaa78453a71929d607b2402")
-    }.fold(e ⇒ failure, info ⇒
-      "be all lists for manager" in {
-        info must beSome.like {
-          case nel ⇒ nel.list must haveTheSameElementsAs(all)
-        }
-      })
-      * */
+  val all = List(ListInfo("list1", "test1"), ListInfo("list2", "test2"))
 
-    todo
-  }
+  val noRow = rowList2(
+    classOf[String] -> "list_id",
+    classOf[String] -> "account_name")
 
-  // @todo high tracked for Manager
+  lazy val noCon = connection(handleStatement.
+    withQueryDetection("^SELECT ").
+    withQueryHandler({ e: acolyte.Execution ⇒ noRow.asResult }))
+
+  lazy val allCon = connection(handleStatement.
+    withQueryDetection("^SELECT ").
+    withQueryHandler({ e: acolyte.Execution ⇒
+      (all.foldLeft(noRow.asInstanceOf[RowList[Row2[String, String]]]) {
+        (r, l) ⇒ r :+ row2(l.listId, l.accountName)
+      }).asResult
+    }))
 }

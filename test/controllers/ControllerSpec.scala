@@ -1,20 +1,22 @@
 package cielago.controllers
 
 import play.api.Play.current
-
-import play.api.cache.Cache
-
 import play.api.mvc.PlainResult
-
 import play.api.test.FakeApplication
 
+import acolyte.{ StatementHandler }
+
 trait ControllerSpec {
-  protected def fakeApp: FakeApplication =
+  protected def fakeApp(h: Option[StatementHandler] = None): FakeApplication =
     FakeApplication(additionalConfiguration = Map(
       "application.secret" -> "test",
-      "db.default.driver" -> "org.apache.derby.jdbc.ClientDriver",
-      "db.default.url" -> "jdbc:derby://localhost:1527/target/testdb;deregister=true",
-      "evolutionplugin" -> "disabled"),
-      classloader = Class.forName("org.apache.derby.jdbc.ClientDriver").getClassLoader)
+      "evolutionplugin" -> "disabled") ++ h.fold(Map[String, String]())(
+        handler ⇒ {
+          val id = System.identityHashCode(this).toString
+          acolyte.Driver.register(id, handler)
+
+          Map("db.default.driver" -> "acolyte.Driver",
+            "db.default.url" -> "jdbc:acolyte:test?handler=%s".format(id))
+        }))
 
 }
