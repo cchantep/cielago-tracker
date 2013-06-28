@@ -6,4 +6,5 @@ Tracker module for Cielago.
 
 ## Prerequisites
 
+* [Scalaz](https://github.com/scalaz/)
 * [Acolyte](https://github.com/cchantep/cielago-tracker)

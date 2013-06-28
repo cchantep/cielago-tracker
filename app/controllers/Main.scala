@@ -4,7 +4,7 @@ import java.util.{ Date, Locale }
 
 import java.text.SimpleDateFormat
 
-import scalaz.Booleans
+import scalaz.syntax.std.boolean.ToBooleanOpsFromBoolean // .fold
 
 import play.api.Play
 
@@ -38,7 +38,7 @@ import cielago.models.{
   TrackPeriodListSelector
 }
 
-object Main extends CielagoController with Cielago with Booleans {
+object Main extends CielagoController with Cielago {
   private val defaultOrder = Seq(OrderClause("sendTime", AscendingOrder))
 
   private lazy val trackForm = Form(

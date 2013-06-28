@@ -1,7 +1,5 @@
 package cielago.models
 
-import scalaz.{ Failure, Success, Lists }
-
 import org.specs2.mutable.Specification
 
 object ListInfoSpec extends Specification with ListInfoFixtures {

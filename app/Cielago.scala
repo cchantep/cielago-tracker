@@ -4,17 +4,15 @@ import java.io.{ PrintWriter, StringWriter }
 
 import util.control.Exception.allCatch
 
-import scalaz.{ Identitys, Validation, Validations, NonEmptyList }
+import scalaz.ValidationNel
+import scalaz.syntax.validation.ToValidationV // .failureNel, .successNel
 
-/**
- * Adapted from https://github.com/ornicar/scalalib/blob/master/src/main/scala/OrnicarValidation.scala
- */
-trait Cielago extends Validations with Identitys {
-  type Failures = NonEmptyList[String]
+trait Cielago {
+  type Failure = String
 
-  type Valid[A] = Validation[Failures, A]
+  type Valid[A] = ValidationNel[Failure, A]
 
-  protected def stackTraceFailure(t: Throwable): Failures = {
+  protected def stackTraceFailure(t: Throwable): Failure = {
     val buff = new StringWriter()
     val w = new PrintWriter(buff)
 
@@ -22,9 +20,9 @@ trait Cielago extends Validations with Identitys {
       t.printStackTrace(w)
       w.flush()
 
-      buff.toString.wrapNel
+      buff.toString
     } catch {
-      case _: Throwable ⇒ t.getMessage.wrapNel
+      case _: Throwable ⇒ t.getMessage
     } finally {
       try {
         w.close()
@@ -32,7 +30,7 @@ trait Cielago extends Validations with Identitys {
     }
   }
 
-  def unsafe[A](op: ⇒ A)(implicit handler: Throwable ⇒ Failures = stackTraceFailure _): Valid[A] =
-    validation((allCatch either op).left map handler)
+  def unsafe[A](op: ⇒ A)(implicit handler: Throwable ⇒ Failure = stackTraceFailure _): Valid[A] = (allCatch either op).fold(
+    handler(_).failureNel[A], _.successNel[Failure])
 
 }

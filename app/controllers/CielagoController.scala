@@ -3,7 +3,7 @@ package cielago.controllers
 import org.apache.commons.codec.binary.Base64
 import org.apache.commons.codec.digest.DigestUtils.{ md5Hex ⇒ md5 }
 
-import scalaz.{ Identitys, NonEmptyList, Options }
+import scalaz.syntax.id.ToIdOps // |>
 
 import play.api.db.DB
 
@@ -31,9 +31,7 @@ trait CielagoResults { controller: Controller ⇒
   }
 }
 
-trait CielagoController extends Controller
-    with CielagoResults with Options with Identitys {
-
+trait CielagoController extends Controller with CielagoResults {
   protected def get(name: String)(implicit request: Request[_]) =
     request.queryString get name flatMap { _.headOption }
 
