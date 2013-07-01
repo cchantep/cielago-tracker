@@ -5,9 +5,13 @@ import Keys._
 import play.Project._
 
 sealed trait Resolvers {
-  val sonatype = "sonatype" at "http://oss.sonatype.org/content/repositories/releases"
-  val applicius = "Applicius Snapshots" at "https://raw.github.com/applicius/mvn-repo/master/snapshots/"
+  val sonatype = 
+    "Sonatype" at "http://oss.sonatype.org/content/repositories/releases"
 
+  val typesafe = 
+    "Typesafe" at "http://repo.typesafe.com/typesafe/maven-releases/"
+
+  val appliciusSnapshots = "Applicius Snapshots" at "https://raw.github.com/applicius/mvn-repo/master/snapshots/"
 }
 
 /**
@@ -39,6 +43,6 @@ object ApplicationBuild extends Build
     settings(
       scalaVersion := "2.10.2",
       scalacOptions := Seq("-deprecation", "-unchecked", "-feature"),
-      resolvers := Seq(sonatype, applicius))
+      resolvers := Seq(sonatype, typesafe, appliciusSnapshots))
 
 }
