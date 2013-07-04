@@ -19,7 +19,9 @@ sealed trait Resolvers {
  */
 sealed trait Dependencies {
   val compile =
-    Seq("org.scalaz" %% "scalaz-core" % "7.0.0", jdbc, anorm)
+    Seq("org.scalaz" %% "scalaz-core" % "7.0.0", 
+      "javax.mail" % "mail" % "1.5.0-b01",
+      jdbc, anorm)
 
   val test =
     Seq(
@@ -39,10 +41,12 @@ object ApplicationBuild extends Build
     compile ++ test.map { dep ⇒ dep % "test" } ++ runtime.
       map { dep ⇒ dep % "runtime" }
 
-  lazy val main = play.Project("Cielago-tracker", "1.0.2", appDependencies).
+  lazy val main = play.Project(
+    "Cielago-tracker", "1.0.3-SNAPSHOT", appDependencies).
     settings(
       scalaVersion := "2.10.2",
       scalacOptions := Seq("-deprecation", "-unchecked", "-feature"),
-      resolvers := Seq(sonatype, typesafe, appliciusSnapshots))
+      resolvers := Seq(
+        Resolver.mavenLocal, sonatype, typesafe, appliciusSnapshots))
 
 }
