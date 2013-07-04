@@ -26,7 +26,9 @@ sealed trait ListInfoFixtures {
   import acolyte.{ RowList, Row2 }
   import acolyte.Acolyte._
 
-  val all = List(ListInfo("list1", "test1"), ListInfo("list2", "test2"))
+  val all = List(
+    ListInfo(ID("list1"), "test1"), 
+    ListInfo(ID("list2"), "test2"))
 
   val noRow = rowList2(
     classOf[String] -> "list_id",
@@ -39,7 +41,7 @@ sealed trait ListInfoFixtures {
   lazy val allCon = connection(handleStatement.
     withQueryDetection("^SELECT ").
     withQueryHandler({ e: acolyte.Execution ⇒
-      (all.foldLeft(noRow.asInstanceOf[RowList[Row2[String, String]]]) {
+      (all.foldLeft(noRow) {
         (r, l) ⇒ r :+ row2(l.listId, l.accountName)
       }).asResult
     }))

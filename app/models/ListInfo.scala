@@ -9,14 +9,14 @@ import anorm.{ ~, SQL }
 import anorm.SqlParser.str
 
 case class ListInfo(
-  listId: String,
+  listId: ListId,
   accountName: String)
 
 object ListInfo {
-  val mapping = str("list_id") ~ str("account_name")
+  private[models] val mapping = str("list_id") ~ str("account_name")
 
-  val parsing = mapping map {
-    case listId ~ accountName ⇒ ListInfo(listId, accountName)
+  private val parsing = mapping map {
+    case listId ~ accountName ⇒ ListInfo(ID(listId), accountName)
   }
 
   def tracked(userDigest: String)(implicit conn: Connection): Option[NonEmptyList[ListInfo]] = SQL("""

@@ -10,7 +10,7 @@ import anorm.SqlParser.{ date, long, scalar }
 case class DispatchReport(messages: Long, recipients: Long)
 
 object DispatchReport extends DispatchReportClauses {
-  val parsing = long("message_count") ~
+  private val parsing = long("message_count") ~
     long("recipient_count") map {
       case messages ~ recipients ⇒ DispatchReport(messages, recipients)
     }

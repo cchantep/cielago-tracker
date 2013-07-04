@@ -15,7 +15,7 @@ case class MessageReport(
   recipientCount: Long)
 
 object MessageReport {
-  val colMap = Map(
+  private val colMap = Map(
     "listId" -> "l.uuid",
     "accountName" -> "l.login",
     "messageId" -> "m.uuid",
@@ -23,7 +23,7 @@ object MessageReport {
     "sendTime" -> "m.send_time",
     "recipientCount" -> "recipient_count")
 
-  val parsing = ListInfo.mapping ~
+  private val parsing = ListInfo.mapping ~
     str("message_id") ~
     str("subject") ~
     long("send_time") ~
@@ -34,7 +34,7 @@ object MessageReport {
         subject ~
         sendTime ~
         recipientCount ⇒
-        MessageReport(ListInfo(listId, accountName),
+        MessageReport(ListInfo(ID(listId), accountName),
           messageId,
           subject,
           new Date(sendTime),
